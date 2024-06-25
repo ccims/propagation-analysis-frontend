@@ -1,7 +1,7 @@
 <template>
     <div v-for="(item, index) in items">
         <v-divider v-if="index != 0" />
-        <v-card variant="text" rounded="0" class="px-3" :to="to(item)">
+        <v-card variant="text" rounded="0" class="px-3" :to="to(item)" @click="$emit('click', item)">
             <slot name="item" :item="item" />
         </v-card>
     </div>
@@ -20,4 +20,8 @@ defineProps({
         required: true
     }
 });
+
+defineEmits<{
+    (event: "click", item: T): void;
+}>()
 </script>

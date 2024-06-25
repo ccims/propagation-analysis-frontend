@@ -25,6 +25,7 @@ import { SSelectable } from "../smodel/sSelectable";
 import { CreateRelationAction } from "../features/connect/createRelationAction";
 import { ConnectAction } from "../features/connect/connectAction";
 import { CancelConnectAction } from "../features/connect/cancelConnectAction";
+import { SRoot } from "../smodel/sRoot";
 
 export abstract class GraphModelSource extends LocalModelSource {
     private layout?: GraphLayout;
@@ -123,7 +124,8 @@ export abstract class GraphModelSource extends LocalModelSource {
                 marker: "ARROW"
             },
             children: [],
-            contextMenuData: null
+            contextMenuData: null,
+            propagationModeActive: false
         };
         const model = this.model as Root;
         model.children = [...model.children, relation];
@@ -155,6 +157,14 @@ export abstract class GraphModelSource extends LocalModelSource {
                 }))
         ];
         this.handleSelectionChanged(elements);
+        if ((this.model as any).propagationMode && elements.length > 0) {
+            const action: SelectAction = {
+                kind: SelectAction.KIND,
+                selectedElementsIDs: [],
+                deselectedElementsIDs: elements.map((element) => element.id)
+            };
+            this.actionDispatcher.dispatch(action);
+        }
     }
 
     private rebuildRoot(fitToBounds: boolean) {
@@ -167,7 +177,7 @@ export abstract class GraphModelSource extends LocalModelSource {
 
     private createRoot(graph: Graph, layout: GraphLayout, fitToBounds: boolean): Root {
         const components = graph.components.map((component) => this.createComponent(component, layout));
-        const relations = graph.relations.map((relation) => this.createRelation(relation, layout));
+        const relations = graph.relations.map((relation) => this.createRelation(graph, relation, layout));
         const issueTypeLookup = this.extractIssueTypeLookup(graph);
         const issueRelations = graph.issueRelations
             .map((issueRelation) => this.createIssueRelation(issueRelation, issueTypeLookup))
@@ -195,7 +205,8 @@ export abstract class GraphModelSource extends LocalModelSource {
             type: "root",
             id: "root",
             children: [...issueRelations, ...relations, ...components, ...contextMenus],
-            targetBounds
+            targetBounds,
+            propagationMode: graph.propagationMode
         };
     }
 
@@ -269,7 +280,7 @@ export abstract class GraphModelSource extends LocalModelSource {
         };
     }
 
-    private createRelation(relation: GropiusRelation, layout: GraphLayout): Relation {
+    private createRelation(graph: Graph, relation: GropiusRelation, layout: GraphLayout): Relation {
         const children: Element[] = [];
         children.push(this.createNameLabel(relation.name, relation.id));
         return {
@@ -279,7 +290,8 @@ export abstract class GraphModelSource extends LocalModelSource {
             start: relation.start,
             end: relation.end,
             contextMenuData: relation.contextMenu,
-            children
+            children,
+            propagationModeActive: relation.propagationModeActive
         };
     }
 

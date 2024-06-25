@@ -11,6 +11,7 @@ export class SRoot extends ViewportRootElementImpl {
     targetBounds?: Bounds;
     changeRevision = 0;
     private _issueRelationHighlightRelation!: Map<string, Set<string>>;
+    propagationMode!: boolean;
 
     private get issueRelationHighlightRelation(): Map<string, Set<string>> {
         if (!this._issueRelationHighlightRelation) {
@@ -124,6 +125,17 @@ export class SRoot extends ViewportRootElementImpl {
                 stroke-width: calc(3px / var(--diagram-zoom));
                 stroke-dasharray: calc(6px / var(--diagram-zoom));
                 cursor: pointer;
+            }
+
+            .sprotty .propagation-path {
+                stroke: var(--propagation-shape-stroke-color-inactive);
+                stroke-width: calc(3px / var(--diagram-zoom));
+                stroke-dasharray: calc(6px / var(--diagram-zoom));
+                cursor: pointer;
+            }
+
+            .sprotty .propagation-path.propagation-path-active {
+                stroke: var(--propagation-shape-stroke-color-active);
             }
 
             .sprotty .selectable {

@@ -36,14 +36,14 @@ export default defineConfig({
         port: 4200,
         proxy: {
             "/api/graphql": {
-                target: "http://localhost:8080/graphql",
+                target: "https://frontend.gropius.duckdns.org/api/graphql",
                 changeOrigin: true,
                 secure: false,
                 ws: true,
                 ignorePath: true
             },
             "/api/login": {
-                target: "http://localhost:3000",
+                target: "https://frontend.gropius.duckdns.org/api/login",
                 changeOrigin: true,
                 secure: false,
                 ws: true,

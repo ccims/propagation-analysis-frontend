@@ -72,7 +72,7 @@
 import SimpleField from "@/components/input/SimpleField.vue";
 import IssueTemplateAutocomplete from "@/components/input/IssueTemplateAutocomplete.vue";
 import Markdown from "@/components/Markdown.vue";
-import { ref, watch } from "vue";
+import { PropType, ref, watch } from "vue";
 import { onEvent } from "@/util/eventBus";
 import IssueTypeAutocomplete from "../input/IssueTypeAutocomplete.vue";
 import IssueStateAutocomplete from "../input/IssueStateAutocomplete.vue";
@@ -90,6 +90,7 @@ import TemplatedFieldsInputVue, { Field } from "../input/schema/TemplatedFieldsI
 import { asyncComputed } from "@vueuse/core";
 import { generateDefaultData } from "../input/schema/generateDefaultData";
 import { IdObject } from "@/util/types";
+import { nextTick } from "vue";
 
 const createIssueDialog = ref(false);
 const client = useClient();
@@ -97,16 +98,46 @@ const typePath = ref<string | undefined>(undefined);
 const isOpen = ref<boolean | undefined>(undefined);
 const [blockWithErrorMessage, submitDisabled] = useBlockingWithErrorMessage();
 
+interface AdditionalIssueData {
+    title: string;
+    template: string;
+    type: string;
+    state: string;
+}
+
 const emit = defineEmits<{
-    (event: "created-issue", issue: IdObject): void;
+    (event: "created-issue", issue: IdObject & AdditionalIssueData): void;
 }>();
 
 const props = defineProps({
     trackable: {
         type: String,
         required: true
+    },
+    initialValue: {
+        type: Object as PropType<AdditionalIssueData & { typePath: string, isOpen: boolean }>,
+        required: false
     }
 });
+
+watch(
+    () => props.initialValue,
+    (value) => {
+        resetForm({
+            values: value
+        });
+        typePath.value = value?.typePath;
+        isOpen.value = value?.isOpen;
+        nextTick(() => {
+            resetForm({
+                values: value
+            });
+        });
+    },
+    {
+        deep: true
+    }
+);
 
 const schema = toTypedSchema(
     yup.object().shape({
@@ -184,12 +215,12 @@ watch(
     }
 );
 
-const createIssue = handleSubmit(async (state) => {
+const createIssue = handleSubmit(async (submitState) => {
     const issue = await blockWithErrorMessage(async () => {
         const res = await client.createIssue({
             input: {
-                ...state,
-                body: state.body ?? "",
+                ...submitState,
+                body: submitState.body ?? "",
                 templatedFields: templatedFields.value,
                 trackables: [props.trackable]
             }
@@ -197,7 +228,13 @@ const createIssue = handleSubmit(async (state) => {
         return res.createIssue.issue;
     }, "Error creating issue");
     createIssueDialog.value = false;
-    emit("created-issue", issue);
+    emit("created-issue", {
+        id: issue.id,
+        title: title.value ?? "",
+        template: template.value!,
+        type: type.value!,
+        state: state.value!,
+    });
 });
 
 function cancelCreateIssue() {

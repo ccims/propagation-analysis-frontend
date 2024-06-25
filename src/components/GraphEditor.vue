@@ -2,7 +2,7 @@
     <div class="sprotty-wrapper">
         <div :id="editorId" class="sprotty" />
         <Teleport
-            v-if="selecteds.length == 1"
+            v-if="selecteds.length == 1 && !propagationMode"
             :key="selected.id"
             :to="`#${selected.contextMenuContainerId}>.context-menu`"
         >
@@ -33,6 +33,17 @@
                         <v-tooltip activator="parent">Remove component version from project</v-tooltip>
                     </SmallFAB>
                 </template>
+                <template v-if="selected.contextMenuData.type == 'component'">
+                    <SmallFAB
+                        class="d-block mt-2"
+                        icon
+                        color="primary-container"
+                        @mouseup="$emit('showSidebarForComponent', selected.id)"
+                    >
+                        <v-icon icon="$issue" />
+                        <v-tooltip activator="parent">Show issues</v-tooltip>
+                    </SmallFAB>
+                </template>
                 <template v-if="selected.contextMenuData.type == 'relation'">
                     <SmallFAB
                         class="d-block"
@@ -47,7 +58,7 @@
                 </template>
             </div>
         </Teleport>
-        <div class="ui-container ma-3">
+        <div class="ui-container full-height pa-3">
             <slot />
         </div>
     </div>
@@ -94,6 +105,10 @@ const props = defineProps({
     layout: {
         type: Object as PropType<GraphLayoutWrapper>,
         required: true
+    },
+    propagationMode: {
+        type: Boolean,
+        required: true
     }
 });
 
@@ -102,6 +117,8 @@ const emit = defineEmits<{
     (event: "removeComponent", value: string): void;
     (event: "createRelation", value: CreateRelationContext): void;
     (event: "deleteRelation", value: string): void;
+    (event: "showSidebarForComponent", value: string): void;
+    (event: "togglePropagationEdge", value: string): void;
 }>();
 
 class ModelSource extends GraphModelSource {
@@ -114,6 +131,11 @@ class ModelSource extends GraphModelSource {
     }
 
     protected handleSelectionChanged(selectedElements: SelectedElement<any>[]): void {
+        for (const newSelected of selectedElements) {
+            if (!selecteds.value.some((selected) => selected.id === newSelected.id)) {
+                emit("togglePropagationEdge", newSelected.id);
+            }
+        }
         selecteds.value = selectedElements;
     }
 }
@@ -188,5 +210,7 @@ watch(
     --issue-relation-stroke-color: rgba(var(--v-theme-on-surface), 0.4);
     --highlight-stroke-color: rgb(var(--v-theme-primary));
     --highlight-fill-color: rgba(var(--v-theme-primary), 0.4);
+    --propagation-shape-stroke-color-inactive: rgb(var(--v-theme-error));
+    --propagation-shape-stroke-color-active: rgb(var(--v-theme-primary));
 }
 </style>

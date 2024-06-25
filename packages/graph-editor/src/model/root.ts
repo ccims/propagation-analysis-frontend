@@ -5,6 +5,7 @@ export interface Root extends Element {
     type: typeof Root.TYPE;
     animated?: boolean;
     targetBounds?: Bounds;
+    propagationMode: boolean;
 }
 
 export namespace Root {

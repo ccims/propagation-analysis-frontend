@@ -74,6 +74,20 @@ export class RelationView implements IView {
             });
             children.push(selectedPath);
         }
+        if (model.propagationModeActive != null) {
+            const selectedPath = svg("path", {
+                attrs: {
+                    d: pathPath,
+                    fill: "none"
+                },
+                class: {
+                    "propagation-path": true,
+                    "propagation-path-active": model.propagationModeActive
+                }
+            });
+            children.push(selectedPath);
+        }
+        
 
         for (const child of model.children) {
             if (child instanceof SLabel) {

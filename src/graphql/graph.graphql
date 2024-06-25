@@ -66,6 +66,8 @@ fragment GraphComponentVersionInfo on ComponentVersion {
         }
     }
     component {
+        id
+        name
         template {
             ...GraphRelationPartnerTemplateInfo
         }
@@ -136,6 +138,7 @@ fragment GraphRelationPartnerTemplateInfo on RelationPartnerTemplate {
 
 fragment GraphRelationTemplateInfo on RelationTemplate {
     name
+    id
     stroke {
         ...StrokeStyleInfo
     }

@@ -13,6 +13,7 @@ export class SRelation extends SSelectable implements Relation, Selectable {
     style!: RelationStyle;
     selected = false;
     path!: RelationPath | null;
+    propagationModeActive!: boolean | null;
 
     constructor() {
         super();

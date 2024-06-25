@@ -11,6 +11,7 @@ import { SChip } from "./sChip";
 import { Math2D } from "../line/math";
 import { IssueType } from "../model/issueType";
 import { SIssueType } from "./sIssueType";
+import { SRoot } from "./sRoot";
 
 export abstract class SIssueAffected extends SSelectable implements IssueAffected, Selectable, Locateable {
     style!: ShapeStyle;
@@ -78,7 +79,7 @@ export abstract class SIssueAffected extends SSelectable implements IssueAffecte
                 }
             })
         );
-        if (this.selected) {
+        if (this.selected && (this.root as SRoot).propagationMode == false) {
             result.push(
                 svg("path", {
                     attrs: {

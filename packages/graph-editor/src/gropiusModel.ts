@@ -4,6 +4,7 @@ export interface Graph {
     components: ComponentVersion[];
     relations: Relation[];
     issueRelations: IssueRelation[];
+    propagationMode: boolean;
 }
 
 export interface Node {
@@ -30,6 +31,7 @@ export interface IssueAffected extends Selectable {
 
 export interface ComponentVersion extends IssueAffected {
     interfaces: Interface[];
+    componentId: string;
 }
 
 export interface Relation extends Selectable {
@@ -37,6 +39,7 @@ export interface Relation extends Selectable {
     start: string;
     end: string;
     style: RelationStyle;
+    propagationModeActive: boolean;
 }
 
 export interface IssueRelation {

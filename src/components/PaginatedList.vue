@@ -10,16 +10,17 @@
             >
             </v-text-field>
             <slot name="search-append" />
-            <div class="sort-container d-flex mr-3" :class="{ hidden: transformedSearchQuery != undefined }">
+            <div class="sort-container d-flex mr-3" :class="{ hidden: transformedSearchQuery != undefined, 'sort-container-small': sortFields.length <= 1 }">
                 <v-select
+                    v-if="sortFields.length > 1"
                     v-model="currentSortField"
                     label="Sort by"
-                    class="mx-2"
+                    class="ml-2"
                     :class="{ hidden: transformedSearchQuery != undefined }"
                     variant="outlined"
                     :items="sortFields"
                 ></v-select>
-                <v-btn icon variant="outlined" @click="toggleSortDirection()">
+                <v-btn class="ml-2" icon variant="outlined" @click="toggleSortDirection()">
                     <v-icon :icon="sortAscending ? 'mdi-sort-ascending' : 'mdi-sort-descending'" />
                     <v-tooltip activator="parent" location="bottom"> Toggle sort sort </v-tooltip>
                 </v-btn>
@@ -29,7 +30,7 @@
             <div v-if="currentItems.length == 0 && loadedInitially" class="text-medium-emphasis">
                 No {{ name }} found
             </div>
-            <CustomList :items="currentItems" :to="to">
+            <CustomList :items="currentItems" :to="to" @click="$emit('click', $event)">
                 <template #item="{ item }">
                     <slot name="item" :item="item" />
                 </template>
@@ -96,6 +97,10 @@ const props = defineProps({
     }
 });
 
+defineEmits<{
+    (event: "click", item: T): void;
+}>()
+
 const searchString = ref("");
 const transformedSearchQuery = computed(() => transformSearchQuery(searchString.value));
 const currentSortField = ref(props.sortFields[0]) as Ref<S>;
@@ -151,6 +156,10 @@ async function updateItems(resetPage: boolean) {
     flex: 0 1 300px;
     overflow-x: clip;
     transition: flex-basis 0.6s ease-in-out;
+}
+
+.sort-container.sort-container-small {
+    flex-basis: 68px;
 }
 
 .sort-container.hidden {

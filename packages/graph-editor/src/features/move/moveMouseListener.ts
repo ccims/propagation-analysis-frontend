@@ -26,7 +26,7 @@ export class MoveMouseListener extends MouseListener {
     override mouseDown(target: SModelElementImpl, event: MouseEvent): Action[] {
         if (event.button === 0) {
             const moveableTarget = findParentByFeature(target, isMovable);
-            if (moveableTarget != undefined && !(target instanceof SContextMenu)) {
+            if (moveableTarget != undefined && !(target instanceof SContextMenu) && (moveableTarget.root as SRoot).propagationMode !== true) {
                 this.startPosition = { x: event.pageX, y: event.pageY };
                 this.targetElement = event.target as Element | undefined;
             } else {
