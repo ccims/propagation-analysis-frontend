@@ -136,7 +136,8 @@ export abstract class GraphModelSource extends LocalModelSource {
                 marker: "ARROW"
             },
             children: [],
-            contextMenuData: null
+            contextMenuData: null,
+            propagationModeActive: false
         };
         const model = this.model as Root;
         model.children = [...model.children, relation];
@@ -301,7 +302,8 @@ export abstract class GraphModelSource extends LocalModelSource {
             end: relation.end,
             points: relationLayout.points,
             contextMenuData: relation.contextMenu,
-            children
+            children,
+            propagationModeActive: relation.propagationModeActive
         };
     }
 

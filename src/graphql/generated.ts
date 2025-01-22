@@ -19264,6 +19264,7 @@ export type GetProjectGraphQuery = {
                                           id: string;
                                           template: {
                                               __typename?: "RelationTemplate";
+                                              id: string;
                                               name: string;
                                               markerType: MarkerType;
                                               stroke?: {
@@ -19362,6 +19363,7 @@ export type GetProjectGraphQuery = {
                               id: string;
                               template: {
                                   __typename?: "RelationTemplate";
+                                  id: string;
                                   name: string;
                                   markerType: MarkerType;
                                   stroke?: {
@@ -19503,6 +19505,7 @@ export type GraphInfoFragment = {
                                 id: string;
                                 template: {
                                     __typename?: "RelationTemplate";
+                                    id: string;
                                     name: string;
                                     markerType: MarkerType;
                                     stroke?: {
@@ -19588,6 +19591,7 @@ export type GraphInfoFragment = {
                     id: string;
                     template: {
                         __typename?: "RelationTemplate";
+                        id: string;
                         name: string;
                         markerType: MarkerType;
                         stroke?: {
@@ -19650,6 +19654,7 @@ export type GraphComponentVersionInfoFragment = {
                         id: string;
                         template: {
                             __typename?: "RelationTemplate";
+                            id: string;
                             name: string;
                             markerType: MarkerType;
                             stroke?: {
@@ -19735,6 +19740,7 @@ export type GraphComponentVersionInfoFragment = {
             id: string;
             template: {
                 __typename?: "RelationTemplate";
+                id: string;
                 name: string;
                 markerType: MarkerType;
                 stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
@@ -19800,6 +19806,7 @@ type GraphRelationPartnerInfo_ComponentVersion_Fragment = {
             id: string;
             template: {
                 __typename?: "RelationTemplate";
+                id: string;
                 name: string;
                 markerType: MarkerType;
                 stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
@@ -19843,6 +19850,7 @@ type GraphRelationPartnerInfo_Interface_Fragment = {
             id: string;
             template: {
                 __typename?: "RelationTemplate";
+                id: string;
                 name: string;
                 markerType: MarkerType;
                 stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
@@ -19914,6 +19922,7 @@ export type GraphRelationPartnerTemplateInfoFragment =
 
 export type GraphRelationTemplateInfoFragment = {
     __typename?: "RelationTemplate";
+    id: string;
     name: string;
     markerType: MarkerType;
     stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
@@ -25653,6 +25662,93 @@ export type FirstIssueStatesQuery = {
         | null;
 };
 
+export type IssueStateQueryVariables = Exact<{
+    id: Scalars["ID"]["input"];
+}>;
+
+export type IssueStateQuery = {
+    __typename?: "Query";
+    node?:
+        | { __typename?: "AddedAffectedEntityEvent" }
+        | { __typename?: "AddedArtefactEvent" }
+        | { __typename?: "AddedLabelEvent" }
+        | { __typename?: "AddedToPinnedIssuesEvent" }
+        | { __typename?: "AddedToTrackableEvent" }
+        | { __typename?: "AggregatedIssue" }
+        | { __typename?: "AggregatedIssueRelation" }
+        | { __typename?: "Artefact" }
+        | { __typename?: "ArtefactTemplate" }
+        | { __typename?: "Assignment" }
+        | { __typename?: "AssignmentType" }
+        | { __typename?: "AssignmentTypeChangedEvent" }
+        | { __typename?: "Body" }
+        | { __typename?: "Component" }
+        | { __typename?: "ComponentPermission" }
+        | { __typename?: "ComponentTemplate" }
+        | { __typename?: "ComponentVersion" }
+        | { __typename?: "ComponentVersionTemplate" }
+        | { __typename?: "FillStyle" }
+        | { __typename?: "GlobalPermission" }
+        | { __typename?: "GropiusUser" }
+        | { __typename?: "IMS" }
+        | { __typename?: "IMSIssue" }
+        | { __typename?: "IMSIssueTemplate" }
+        | { __typename?: "IMSPermission" }
+        | { __typename?: "IMSProject" }
+        | { __typename?: "IMSProjectTemplate" }
+        | { __typename?: "IMSTemplate" }
+        | { __typename?: "IMSUser" }
+        | { __typename?: "IMSUserTemplate" }
+        | { __typename?: "IncomingRelationTypeChangedEvent" }
+        | { __typename?: "Interface" }
+        | { __typename?: "InterfaceDefinition" }
+        | { __typename?: "InterfacePart" }
+        | { __typename?: "InterfacePartTemplate" }
+        | { __typename?: "InterfaceSpecification" }
+        | { __typename?: "InterfaceSpecificationDerivationCondition" }
+        | { __typename?: "InterfaceSpecificationTemplate" }
+        | { __typename?: "InterfaceSpecificationVersion" }
+        | { __typename?: "InterfaceSpecificationVersionTemplate" }
+        | { __typename?: "IntraComponentDependencyParticipant" }
+        | { __typename?: "IntraComponentDependencySpecification" }
+        | { __typename?: "Issue" }
+        | { __typename?: "IssueComment" }
+        | { __typename?: "IssuePriority" }
+        | { __typename?: "IssueRelation" }
+        | { __typename?: "IssueRelationType" }
+        | { __typename?: "IssueState"; id: string; name: string; description: string; isOpen: boolean }
+        | { __typename?: "IssueTemplate" }
+        | { __typename?: "IssueType" }
+        | { __typename?: "Label" }
+        | { __typename?: "OutgoingRelationTypeChangedEvent" }
+        | { __typename?: "PriorityChangedEvent" }
+        | { __typename?: "Project" }
+        | { __typename?: "ProjectPermission" }
+        | { __typename?: "RelatedByIssueEvent" }
+        | { __typename?: "Relation" }
+        | { __typename?: "RelationCondition" }
+        | { __typename?: "RelationLayout" }
+        | { __typename?: "RelationPartnerLayout" }
+        | { __typename?: "RelationTemplate" }
+        | { __typename?: "RemovedAffectedEntityEvent" }
+        | { __typename?: "RemovedArtefactEvent" }
+        | { __typename?: "RemovedAssignmentEvent" }
+        | { __typename?: "RemovedFromPinnedIssuesEvent" }
+        | { __typename?: "RemovedFromTrackableEvent" }
+        | { __typename?: "RemovedIncomingRelationEvent" }
+        | { __typename?: "RemovedLabelEvent" }
+        | { __typename?: "RemovedOutgoingRelationEvent" }
+        | { __typename?: "RemovedTemplatedFieldEvent" }
+        | { __typename?: "StateChangedEvent" }
+        | { __typename?: "StrokeStyle" }
+        | { __typename?: "TemplateChangedEvent" }
+        | { __typename?: "TemplatedFieldChangedEvent" }
+        | { __typename?: "TitleChangedEvent" }
+        | { __typename?: "TypeChangedEvent" }
+        | { __typename?: "View" }
+        | null;
+};
+
 export type ChangeIssueStateMutationVariables = Exact<{
     issue: Scalars["ID"]["input"];
     state: Scalars["ID"]["input"];
@@ -25905,6 +26001,93 @@ export type FirstIssueTypesQuery = {
               };
           }
         | { __typename?: "IssueType" }
+        | { __typename?: "Label" }
+        | { __typename?: "OutgoingRelationTypeChangedEvent" }
+        | { __typename?: "PriorityChangedEvent" }
+        | { __typename?: "Project" }
+        | { __typename?: "ProjectPermission" }
+        | { __typename?: "RelatedByIssueEvent" }
+        | { __typename?: "Relation" }
+        | { __typename?: "RelationCondition" }
+        | { __typename?: "RelationLayout" }
+        | { __typename?: "RelationPartnerLayout" }
+        | { __typename?: "RelationTemplate" }
+        | { __typename?: "RemovedAffectedEntityEvent" }
+        | { __typename?: "RemovedArtefactEvent" }
+        | { __typename?: "RemovedAssignmentEvent" }
+        | { __typename?: "RemovedFromPinnedIssuesEvent" }
+        | { __typename?: "RemovedFromTrackableEvent" }
+        | { __typename?: "RemovedIncomingRelationEvent" }
+        | { __typename?: "RemovedLabelEvent" }
+        | { __typename?: "RemovedOutgoingRelationEvent" }
+        | { __typename?: "RemovedTemplatedFieldEvent" }
+        | { __typename?: "StateChangedEvent" }
+        | { __typename?: "StrokeStyle" }
+        | { __typename?: "TemplateChangedEvent" }
+        | { __typename?: "TemplatedFieldChangedEvent" }
+        | { __typename?: "TitleChangedEvent" }
+        | { __typename?: "TypeChangedEvent" }
+        | { __typename?: "View" }
+        | null;
+};
+
+export type IssueTypeQueryVariables = Exact<{
+    id: Scalars["ID"]["input"];
+}>;
+
+export type IssueTypeQuery = {
+    __typename?: "Query";
+    node?:
+        | { __typename?: "AddedAffectedEntityEvent" }
+        | { __typename?: "AddedArtefactEvent" }
+        | { __typename?: "AddedLabelEvent" }
+        | { __typename?: "AddedToPinnedIssuesEvent" }
+        | { __typename?: "AddedToTrackableEvent" }
+        | { __typename?: "AggregatedIssue" }
+        | { __typename?: "AggregatedIssueRelation" }
+        | { __typename?: "Artefact" }
+        | { __typename?: "ArtefactTemplate" }
+        | { __typename?: "Assignment" }
+        | { __typename?: "AssignmentType" }
+        | { __typename?: "AssignmentTypeChangedEvent" }
+        | { __typename?: "Body" }
+        | { __typename?: "Component" }
+        | { __typename?: "ComponentPermission" }
+        | { __typename?: "ComponentTemplate" }
+        | { __typename?: "ComponentVersion" }
+        | { __typename?: "ComponentVersionTemplate" }
+        | { __typename?: "FillStyle" }
+        | { __typename?: "GlobalPermission" }
+        | { __typename?: "GropiusUser" }
+        | { __typename?: "IMS" }
+        | { __typename?: "IMSIssue" }
+        | { __typename?: "IMSIssueTemplate" }
+        | { __typename?: "IMSPermission" }
+        | { __typename?: "IMSProject" }
+        | { __typename?: "IMSProjectTemplate" }
+        | { __typename?: "IMSTemplate" }
+        | { __typename?: "IMSUser" }
+        | { __typename?: "IMSUserTemplate" }
+        | { __typename?: "IncomingRelationTypeChangedEvent" }
+        | { __typename?: "Interface" }
+        | { __typename?: "InterfaceDefinition" }
+        | { __typename?: "InterfacePart" }
+        | { __typename?: "InterfacePartTemplate" }
+        | { __typename?: "InterfaceSpecification" }
+        | { __typename?: "InterfaceSpecificationDerivationCondition" }
+        | { __typename?: "InterfaceSpecificationTemplate" }
+        | { __typename?: "InterfaceSpecificationVersion" }
+        | { __typename?: "InterfaceSpecificationVersionTemplate" }
+        | { __typename?: "IntraComponentDependencyParticipant" }
+        | { __typename?: "IntraComponentDependencySpecification" }
+        | { __typename?: "Issue" }
+        | { __typename?: "IssueComment" }
+        | { __typename?: "IssuePriority" }
+        | { __typename?: "IssueRelation" }
+        | { __typename?: "IssueRelationType" }
+        | { __typename?: "IssueState" }
+        | { __typename?: "IssueTemplate" }
+        | { __typename?: "IssueType"; id: string; name: string; description: string; iconPath: string }
         | { __typename?: "Label" }
         | { __typename?: "OutgoingRelationTypeChangedEvent" }
         | { __typename?: "PriorityChangedEvent" }
@@ -29934,6 +30117,7 @@ export const StrokeStyleInfoFragmentDoc = gql`
 `;
 export const GraphRelationTemplateInfoFragmentDoc = gql`
     fragment GraphRelationTemplateInfo on RelationTemplate {
+        id
         name
         stroke {
             ...StrokeStyleInfo
@@ -32730,6 +32914,16 @@ export const FirstIssueStatesDocument = gql`
     }
     ${DefaultIssueStateInfoFragmentDoc}
 `;
+export const IssueStateDocument = gql`
+    query issueState($id: ID!) {
+        node(id: $id) {
+            ... on IssueState {
+                ...DefaultIssueStateInfo
+            }
+        }
+    }
+    ${DefaultIssueStateInfoFragmentDoc}
+`;
 export const ChangeIssueStateDocument = gql`
     mutation changeIssueState($issue: ID!, $state: ID!) {
         changeIssueState(input: { issue: $issue, state: $state }) {
@@ -32785,6 +32979,16 @@ export const FirstIssueTypesDocument = gql`
                         ...DefaultIssueTypeInfo
                     }
                 }
+            }
+        }
+    }
+    ${DefaultIssueTypeInfoFragmentDoc}
+`;
+export const IssueTypeDocument = gql`
+    query issueType($id: ID!) {
+        node(id: $id) {
+            ... on IssueType {
+                ...DefaultIssueTypeInfo
             }
         }
     }
@@ -35355,6 +35559,21 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
                 variables
             );
         },
+        issueState(
+            variables: IssueStateQueryVariables,
+            requestHeaders?: GraphQLClientRequestHeaders
+        ): Promise<IssueStateQuery> {
+            return withWrapper(
+                (wrappedRequestHeaders) =>
+                    client.request<IssueStateQuery>(IssueStateDocument, variables, {
+                        ...requestHeaders,
+                        ...wrappedRequestHeaders
+                    }),
+                "issueState",
+                "query",
+                variables
+            );
+        },
         changeIssueState(
             variables: ChangeIssueStateMutationVariables,
             requestHeaders?: GraphQLClientRequestHeaders
@@ -35441,6 +35660,21 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
                         ...wrappedRequestHeaders
                     }),
                 "firstIssueTypes",
+                "query",
+                variables
+            );
+        },
+        issueType(
+            variables: IssueTypeQueryVariables,
+            requestHeaders?: GraphQLClientRequestHeaders
+        ): Promise<IssueTypeQuery> {
+            return withWrapper(
+                (wrappedRequestHeaders) =>
+                    client.request<IssueTypeQuery>(IssueTypeDocument, variables, {
+                        ...requestHeaders,
+                        ...wrappedRequestHeaders
+                    }),
+                "issueType",
                 "query",
                 variables
             );

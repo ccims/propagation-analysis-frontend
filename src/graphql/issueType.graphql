@@ -23,6 +23,14 @@ query firstIssueTypes($template: ID!, $count: Int!) {
     }
 }
 
+query issueType($id: ID!) {
+    node(id: $id) {
+        ... on IssueType {
+            ...DefaultIssueTypeInfo
+        }
+    }
+}
+
 mutation changeIssueType($issue: ID!, $type: ID!) {
     changeIssueType(input: { issue: $issue, type: $type }) {
         typeChangedEvent {

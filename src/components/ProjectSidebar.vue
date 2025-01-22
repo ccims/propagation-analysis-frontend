@@ -7,6 +7,9 @@
             rounded="xl"
         >
             <div class="d-flex align-center mx-2">
+                <IconButton v-if="propagationMode" @click="propagationIssue = undefined">
+                    <v-icon icon="mdi-arrow-left" />
+                </IconButton>
                 <span class="text-subtitle-1 text-ellipses flex-grow-1 ml-2">{{
                     selectedElementInfo.componentVersion.component.name
                 }}</span>
@@ -24,70 +27,92 @@
                 </IconButton>
             </div>
             <div class="flex-1-1-0 h-0">
-                <PaginatedList
-                    name="issues"
-                    :item-manager="itemManager"
-                    :sort-fields="sortFields"
-                    :to="issueRoute"
-                    :sort-ascending-initially="false"
-                    :dependencies="[selectedElementInfo.componentVersion.id, issueFilter]"
-                >
-                    <template #item="{ item }">
-                        <IssueListItem :item="item" hide-details />
-                    </template>
-                    <template #additional-filter>
-                        <div class="ga-2 d-flex flex-wrap mb-2">
-                            <v-chip
-                                v-if="issueFilter.affectedEntity != undefined"
-                                rounded="lg"
-                                variant="outlined"
-                                closable
-                                close-icon="mdi-close"
-                                :prepend-icon="
-                                    selectedElementInfo.affectedEntity.__typename == 'ComponentVersion'
-                                        ? '$component-version'
-                                        : '$interface'
-                                "
-                                @click:close="issueFilter.affectedEntity = undefined"
-                            >
-                                {{ selectedElementInfo.affectedEntityName }}
-                            </v-chip>
-                            <v-chip
-                                v-if="issueFilter.type != undefined"
-                                rounded="lg"
-                                variant="outlined"
-                                closable
-                                close-icon="mdi-close"
-                                @click:close="issueFilter.type = undefined"
-                            >
-                                {{ issueFilter.type.name }}
-                                <template #prepend>
-                                    <IssueTypeIcon
-                                        :path="issueFilter.type.iconPath"
-                                        fill="currentColor"
-                                        height="18px"
-                                        class="v-icon--start"
-                                    />
-                                </template>
-                            </v-chip>
-                            <v-chip
-                                v-if="issueFilter.isOpen != undefined"
-                                rounded="lg"
-                                variant="outlined"
-                                closable
-                                close-icon="mdi-close"
-                                :class="{
-                                    'open-issue-chip': issueFilter.isOpen,
-                                    'closed-issue-chip': !issueFilter.isOpen
-                                }"
-                                prepend-icon="mdi-circle"
-                                @click:close="issueFilter.isOpen = undefined"
-                            >
-                                {{ issueFilter.isOpen ? "Open" : "Closed" }}
-                            </v-chip>
-                        </div>
-                    </template>
-                </PaginatedList>
+                <v-window :model-value="propagationWindow" class="h-100">
+                    <v-window-item :key="0" class="h-100">
+                        <PaginatedList
+                            name="issues"
+                            :item-manager="itemManager"
+                            :sort-fields="sortFields"
+                            :to="() => undefined"
+                            :sort-ascending-initially="false"
+                            :dependencies="[selectedElementInfo.componentVersion.id, issueFilter, propagationIssue]"
+                            @click="(event: Issue) => (propagationIssue = event)"
+                        >
+                            <template #item="{ item }">
+                                <IssueListItem :item="item" hide-details />
+                            </template>
+                            <template #additional-filter>
+                                <div class="ga-2 d-flex flex-wrap mb-2">
+                                    <v-chip
+                                        v-if="issueFilter.affectedEntity != undefined"
+                                        rounded="lg"
+                                        variant="outlined"
+                                        closable
+                                        close-icon="mdi-close"
+                                        :prepend-icon="
+                                            selectedElementInfo.affectedEntity.__typename == 'ComponentVersion'
+                                                ? '$component-version'
+                                                : '$interface'
+                                        "
+                                        @click:close="issueFilter.affectedEntity = undefined"
+                                    >
+                                        {{ selectedElementInfo.affectedEntityName }}
+                                    </v-chip>
+                                    <v-chip
+                                        v-if="issueFilter.type != undefined"
+                                        rounded="lg"
+                                        variant="outlined"
+                                        closable
+                                        close-icon="mdi-close"
+                                        @click:close="issueFilter.type = undefined"
+                                    >
+                                        {{ issueFilter.type.name }}
+                                        <template #prepend>
+                                            <IssueTypeIcon
+                                                :path="issueFilter.type.iconPath"
+                                                fill="currentColor"
+                                                height="18px"
+                                                class="v-icon--start"
+                                            />
+                                        </template>
+                                    </v-chip>
+                                    <v-chip
+                                        v-if="issueFilter.isOpen != undefined"
+                                        rounded="lg"
+                                        variant="outlined"
+                                        closable
+                                        close-icon="mdi-close"
+                                        :class="{
+                                            'open-issue-chip': issueFilter.isOpen,
+                                            'closed-issue-chip': !issueFilter.isOpen
+                                        }"
+                                        prepend-icon="mdi-circle"
+                                        @click:close="issueFilter.isOpen = undefined"
+                                    >
+                                        {{ issueFilter.isOpen ? "Open" : "Closed" }}
+                                    </v-chip>
+                                </div>
+                            </template>
+                        </PaginatedList>
+                    </v-window-item>
+                    <v-window-item :key="1" class="full-height issue-list-container">
+                        <v-autocomplete
+                            v-model="selectedCharacteristics"
+                            :items="propagationData.allCharacteristics"
+                            multiple
+                            chips
+                            label="Characteristics"
+                            class="mt-2 px-3"
+                        />
+                        <IssuePropagationList
+                            :items="propagationData.allPropagatedIssues"
+                            :components="propagationData.componentsWithLookup?.components ?? new Map()"
+                            :types="propagationData.types"
+                            :states="propagationData.states"
+                            @create-issue="$emit('create-issue', $event)"
+                        />
+                    </v-window-item>
+                </v-window>
             </div>
         </v-sheet>
     </v-slide-x-reverse-transition>
@@ -111,6 +136,8 @@ import IssueListItem from "@/components/IssueListItem.vue";
 import IssueTypeIcon from "@/components/IssueTypeIcon.vue";
 import { IdObject } from "@/util/types";
 import { RouteLocationRaw } from "vue-router";
+import { Component, PropagatedIssue } from "@/util/propagation/issueModel";
+import IssuePropagationList from "./IssuePropagationList.vue";
 
 type ProjectGraph = NodeReturnType<"getProjectGraph", "Project">;
 type Issue = IssueListItemInfoFragment;
@@ -121,6 +148,10 @@ const props = defineProps({
     originalGraph: {
         type: Object as PropType<ProjectGraph>,
         required: false
+    },
+    propagationData: {
+        type: Object as PropType<PropagationData>,
+        required: true
     }
 });
 
@@ -128,6 +159,20 @@ const model = defineModel({
     type: Object as PropType<SelectedElement<ContextMenuData>>,
     required: false
 });
+
+const selectedCharacteristics = defineModel("selectedCharacteristics", {
+    type: Array as PropType<string[]>,
+    required: true
+});
+
+const propagationIssue = defineModel("propagationIssue", {
+    type: Object as PropType<Issue>,
+    required: false
+});
+
+defineEmits<{
+    (event: "create-issue", value: PropagatedIssue): void;
+}>();
 
 const client = useClient();
 
@@ -300,6 +345,25 @@ function issueRoute(issue: IdObject): RouteLocationRaw {
         params: { issue: issue.id, trackable: selectedElementInfo.value!.componentVersion.component.id }
     };
 }
+
+export interface PropagationData {
+    types: Map<string, { iconPath: string }>;
+    states: Map<string, { isOpen: boolean }>;
+    allCharacteristics: string[];
+    allPropagatedIssues: PropagatedIssue[];
+    componentsWithLookup?: {
+        components: Map<string, Component>;
+        componentLookup: Map<string, string>;
+    };
+}
+
+const propagationMode = computed(() => {
+    return propagationIssue.value != undefined;
+});
+
+const propagationWindow = computed(() => {
+    return propagationMode.value ? 1 : 0;
+});
 </script>
 <style scoped>
 .sidebar {

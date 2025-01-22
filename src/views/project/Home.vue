@@ -3,6 +3,7 @@
         v-if="graph != undefined && layout != undefined"
         v-model:layout="layout"
         :graph="graph"
+        :propagation-mode="propagationMode"
         @update:selected="selectedElement = $event"
         @update:layout="hasLayoutChanges = true"
         @remove-component="removeComponentVersion"
@@ -10,6 +11,7 @@
         @delete-relation="deleteRelation"
         @add-interface="addInterface"
         @navigate-to="navigateTo"
+        @toggle-propagation-edge="togglePropagationEdge"
     >
         <div class="w-100 h-100 d-flex">
             <div class="flex-grow-1 d-flex flex-column">
@@ -73,7 +75,25 @@
                         <FilterChip v-model="showIssueRelations" label="Issue Relations" />
                     </div>
                 </div>
-                <ProjectSidebar v-model="selectedElement" :original-graph="originalGraph ?? undefined" />
+                <ProjectSidebar
+                    v-model="selectedElement"
+                    v-model:selected-characteristics="selectedCharacteristics"
+                    :propagation-issue="propagationIssue"
+                    @update:propagation-issue="
+                        (issue?: Issue) => {
+                            if (issue == undefined) {
+                                propagationIssue = undefined;
+                            } else {
+                                propagateIssue(issue);
+                            }
+                        }
+                    "
+                    :original-graph="originalGraph ?? undefined"
+                    :propagation-data="propagationData"
+                    @create-issue="createIssue"
+                    @propagate-issue="propagateIssue"
+                    @close-propagation="propagationIssue = undefined"
+                />
             </div>
         </div>
     </GraphEditor>
@@ -174,7 +194,12 @@ import {
     GraphRelationTemplateInfoFragment,
     RelationTemplateFilterInput,
     Point,
-    UpdateViewInput
+    UpdateViewInput,
+    IssueListItemInfoFragment,
+    IssueOrderField,
+    OrderDirection,
+    Trackable,
+    IssueOrder
 } from "@/graphql/generated";
 import { withErrorMessage } from "@/util/withErrorMessage";
 import { computedAsync } from "@vueuse/core";
@@ -204,7 +229,7 @@ import { inject } from "vue";
 import { eventBusKey } from "@/util/keys";
 import RelationTemplateAutocomplete from "@/components/input/RelationTemplateAutocomplete.vue";
 import { IdObject } from "@/util/types";
-import ProjectSidebar from "@/components/ProjectSidebar.vue";
+import ProjectSidebar, { PropagationData } from "@/components/ProjectSidebar.vue";
 import ViewAutocomplete from "@/components/input/ViewAutocomplete.vue";
 import CreateViewDialog from "@/components/dialog/CreateViewDialog.vue";
 import CreateComponentDialog from "@/components/dialog/CreateComponentDialog.vue";
@@ -212,6 +237,11 @@ import CreateComponentVersionDialog from "@/components/dialog/CreateComponentVer
 import InterfaceSpecificationVersionAutocomplete from "@/components/input/InterfaceSpecificationVersionAutocomplete.vue";
 import CreateInterfaceSpecificationDialog from "@/components/dialog/CreateInterfaceSpecificationDialog.vue";
 import CreateInterfaceSpecificationVersionDialog from "@/components/dialog/CreateInterfaceSpecificationVersionDialog.vue";
+import { ItemManager } from "@/components/PaginatedList.vue";
+import { Component, PropagatedIssue } from "@/util/propagation/issueModel";
+import { defaultPropagationConfig } from "@/util/propagation/defaultPropagationConfig";
+import { propagateIssues } from "@/util/propagation/propagation";
+import { testPropagation } from "@/util/propagation/scoreCalculation";
 
 type ProjectGraph = NodeReturnType<"getProjectGraph", "Project">;
 type GraphLayoutSource = Pick<ProjectGraph, "relationLayouts" | "relationPartnerLayouts">;
@@ -380,6 +410,308 @@ const showClosedIssues = ref(false);
 const showIssueRelations = ref(true);
 const selectedElement = ref<SelectedElement<ContextMenuData> | undefined>(undefined);
 
+// region propagation stuff
+type Issue = IssueListItemInfoFragment;
+
+const propagationComponent = ref<ComponentVersion>();
+const propagationIssue = ref<Issue>();
+
+const propagationMode = computed(() => {
+    return propagationIssue.value != undefined;
+});
+
+const propagationWindow = computed(() => {
+    return propagationMode.value ? 1 : 0;
+});
+
+const sortFields = {
+    Updated: IssueOrderField.LastUpdatedAt
+};
+
+const itemManager: ItemManager<Issue, IssueOrderField> = {
+    fetchItems: async function (
+        filter: string | undefined,
+        orderBy: IssueOrder[],
+        count: number,
+        page: number
+    ): Promise<[Issue[], number]> {
+        if (filter == undefined) {
+            const res = await client.getIssueList({
+                orderBy,
+                count,
+                skip: page * count,
+                trackable: propagationComponent.value!.componentId
+            });
+            const issues = (res.node as Trackable).issues;
+            return [issues.nodes, issues.totalCount];
+        } else {
+            const res = await client.getFilteredIssueList({
+                query: filter,
+                count,
+                filter: { trackables: { any: { id: { eq: trackableId.value } } } }
+            });
+            return [res.searchIssues, res.searchIssues.length];
+        }
+    }
+};
+
+const nonPropagatingEdges = ref(new Set<string>());
+const createdPropagatingIssues = ref<PropagatedIssue[]>([]);
+const propagationConfig = ref(defaultPropagationConfig);
+const selectedCharacteristics = ref<string[]>([]);
+
+const componentsWithLookup = computed(() => {
+    const graph = originalGraph.value;
+    if (graph == undefined) {
+        return undefined;
+    }
+    const components = new Map<string, Component>();
+    const componentLookup = new Map<string, string>();
+    for (const component of graph.components.nodes) {
+        componentLookup.set(component.id, component.component.id);
+        for (const inter of component.interfaceDefinitions.nodes) {
+            if (inter.visibleInterface != undefined) {
+                componentLookup.set(inter.visibleInterface.id, component.component.id);
+            }
+        }
+        if (components.has(component.id)) {
+            continue;
+        }
+        components.set(component.component.id, {
+            id: component.component.id,
+            name: component.component.name,
+            template: component.component.template.id
+        });
+    }
+    return { components, componentLookup };
+});
+
+const allCharacteristics = computed(() => {
+    const characteristics = new Set<string>();
+    const config = propagationConfig.value;
+    Object.values(config.schemas).forEach((schema) => {
+        schema.characteristics.forEach((characteristic) => {
+            characteristics.add(characteristic);
+        });
+    });
+    config.rules.forEach((rule) => {
+        (rule.filterIssue.characteristics ?? []).forEach((characteristic) => {
+            characteristics.add(characteristic);
+        });
+    });
+    const sortedCharacteristics = Array.from(characteristics);
+    sortedCharacteristics.sort();
+    return sortedCharacteristics;
+});
+
+const propagatedIssuesAndRelations = computed(() => {
+    const graph = originalGraph.value;
+    if (graph == undefined) {
+        return {
+            issues: [],
+            propagatingRelations: new Set<string>()
+        };
+    }
+    const { components, componentLookup } = componentsWithLookup.value!;
+    const relations = graph.components.nodes.flatMap((component) => {
+        return component.outgoingRelations.nodes
+            .filter((relation) => !nonPropagatingEdges.value.has(relation.id))
+            .map((relation) => {
+                return {
+                    id: relation.id,
+                    from: componentLookup.get(component.id)!,
+                    to: componentLookup.get(relation.end!.id)!,
+                    template: relation.template.id
+                };
+            });
+    });
+    return propagateIssues(
+        {
+            components: [...components.values()],
+            issues: createdPropagatingIssues.value,
+            relations
+        },
+        propagationConfig.value
+    );
+});
+
+const allPropagatedIssues = computed(() => {
+    return propagatedIssuesAndRelations.value.issues;
+});
+
+const pending = ref(new Set<string>());
+const types = ref(new Map<string, { iconPath: string }>());
+const states = ref(new Map<string, { isOpen: boolean }>());
+
+const newPropagationIssueTrackableId = ref("");
+const newPropagationIssueValue = ref({
+    title: "",
+    template: "",
+    type: "",
+    state: "",
+    typePath: "",
+    isOpen: false
+});
+const issueToCreate = ref<PropagatedIssue>();
+
+function createIssue(issue: PropagatedIssue) {
+    newPropagationIssueTrackableId.value = propagationComponent.value!.componentId;
+    newPropagationIssueValue.value = {
+        title: issue.title ?? "",
+        template: issue.template,
+        type: issue.type,
+        state: issue.state,
+        typePath: types.value.get(issue.type)?.iconPath ?? "",
+        isOpen: states.value.get(issue.state)?.isOpen ?? false
+    };
+    issueToCreate.value = issue;
+    eventBus?.emit("create-issue");
+}
+
+function createdPropagationIssue(issue: { state: string; type: string; template: string; title: string; id: string }) {
+    const propagatedIssue = issueToCreate.value!;
+    propagatedIssue.type = issue.type;
+    propagatedIssue.state = issue.state;
+    propagatedIssue.template = issue.template;
+    propagatedIssue.title = issue.title;
+    propagatedIssue.id = issue.id;
+    createdPropagatingIssues.value.push(propagatedIssue);
+}
+
+watch(
+    () => allPropagatedIssues.value,
+    (items) => {
+        items.forEach((item) => {
+            if (!types.value.has(item.type) && !pending.value.has(item.type)) {
+                pending.value.add(item.type);
+                client.issueType({ id: item.type }).then((type) => {
+                    types.value.set(item.type, type.node as { iconPath: string });
+                    pending.value.delete(item.type);
+                });
+            }
+            if (!states.value.has(item.state) && !pending.value.has(item.state)) {
+                pending.value.add(item.state);
+                client.issueState({ id: item.state }).then((state) => {
+                    states.value.set(item.state, state.node as { isOpen: boolean });
+                    pending.value.delete(item.state);
+                });
+            }
+        });
+    },
+    {
+        deep: true
+    }
+);
+
+const propagatedIssuesByComponent = computed(() => {
+    const issues = new Map<string, PropagatedIssue[]>();
+    allPropagatedIssues.value.forEach((issue) => {
+        issue.components.forEach((component) => {
+            if (issues.has(component)) {
+                issues.get(component)!.push(issue);
+            } else {
+                issues.set(component, [issue]);
+            }
+        });
+    });
+    return issues;
+});
+
+const propagatingRelations = computed(() => {
+    return propagatedIssuesAndRelations.value.propagatingRelations;
+});
+
+watch(selectedElement, (element) => {
+    const type = element?.contextMenu?.data?.type;
+    if (type == "component" || type == "interface") {
+        showSidebarForComponent(element!.id);
+    } else {
+        closePropagationSidebar();
+    }
+});
+
+function closePropagationSidebar() {
+    propagationComponent.value = undefined;
+    propagationIssue.value = undefined;
+}
+
+function showSidebarForComponent(component: string) {
+    propagationComponent.value = graph.value?.components.find((componentVersion) => componentVersion.id === component);
+}
+
+function propagateIssue(issue: Issue) {
+    propagationIssue.value = issue;
+    nonPropagatingEdges.value = new Set<string>();
+    createdPropagatingIssues.value = [];
+    client.getIssue({ id: issue.id }).then((res) => {
+        const issue = res.node as NodeReturnType<"getIssue", "Issue">;
+        createdPropagatingIssues.value.push({
+            id: issue.id,
+            ref: issue.id,
+            title: issue.title,
+            type: issue.type.id,
+            state: issue.state.id,
+            template: issue.template.id,
+            propagations: [],
+            components: [propagationComponent.value!.componentId],
+            characteristics: selectedCharacteristics.value
+        });
+    });
+}
+
+function togglePropagationEdge(relation: string) {
+    if (nonPropagatingEdges.value.has(relation)) {
+        nonPropagatingEdges.value.delete(relation);
+    } else {
+        nonPropagatingEdges.value.add(relation);
+    }
+}
+
+function doTestPropagation() {
+    const graph = originalGraph.value;
+    if (graph == undefined) {
+        return {
+            issues: [],
+            propagatingRelations: new Set<string>()
+        };
+    }
+    const { components, componentLookup } = componentsWithLookup.value!;
+    const relations = graph.components.nodes.flatMap((component) => {
+        return component.outgoingRelations.nodes.map((relation) => {
+            return {
+                id: relation.id,
+                from: componentLookup.get(component.id)!,
+                to: componentLookup.get(relation.end!.id)!,
+                template: relation.template.id
+            };
+        });
+    });
+    return testPropagation(propagationConfig.value, {
+        components: [...components.values()],
+        relations
+    });
+}
+
+const propagatedIssueLookup = computed(() => {
+    const lookup = new Map<string | number, PropagatedIssue>();
+    allPropagatedIssues.value.forEach((issue) => {
+        lookup.set(issue.ref, issue);
+    });
+    return lookup;
+});
+
+const propagationData = computed<PropagationData>(() => {
+    return {
+        types: types.value,
+        states: states.value,
+        allCharacteristics: allCharacteristics.value,
+        allPropagatedIssues: allPropagatedIssues.value,
+        componentsWithLookup: componentsWithLookup.value
+    };
+});
+
+// endregion
+
 const showAddComponentVersionDialog = ref(false);
 const showSelectRelationTemplateDialog = ref(false);
 const showAddInterfaceDialog = ref(false);
@@ -427,8 +759,16 @@ const graph = computed<Graph | null>(() => {
     const components = originalGraph.value.components.nodes.filter((component) =>
         filter.has(component.component.template.id)
     );
+    const componentVersionLookup = new Map<string, string[]>();
+    for (const component of components) {
+        if (componentVersionLookup.has(component.component.id)) {
+            componentVersionLookup.get(component.component.id)!.push(component.id);
+        } else {
+            componentVersionLookup.set(component.component.id, [component.id]);
+        }
+    }
     const mappedComponents = components.map<ComponentVersion>((component) => {
-        return extractComponent(component, originalGraph.value?.manageComponents ?? false);
+        return extractComponent(component, originalGraph.value?.manageComponents ?? false, componentVersionLookup);
     });
     const relationTargetIds = new Set(
         mappedComponents.flatMap((component) => {
@@ -446,7 +786,7 @@ const graph = computed<Graph | null>(() => {
         return res;
     });
     let mappedIssueRelations: IssueRelation[] = [];
-    if (showIssueRelations.value) {
+    if (showIssueRelations.value && !propagationMode.value) {
         components.forEach((component) => {
             mappedIssueRelations.push(...extractIssueRelations(component));
             for (const definition of component.interfaceDefinitions.nodes) {
@@ -459,7 +799,8 @@ const graph = computed<Graph | null>(() => {
     return {
         components: mappedComponents,
         relations: mappedRelations,
-        issueRelations: mappedIssueRelations
+        issueRelations: mappedIssueRelations,
+        propagationMode: propagationIssue.value != undefined
     };
 });
 
@@ -499,7 +840,12 @@ function extractRelations(
                 contextMenu: {
                     type: "relation",
                     delete: deleteRelation
-                } satisfies ContextMenuData
+                } satisfies ContextMenuData,
+                propagationModeActive:
+                    propagationMode.value &&
+                    (propagatingRelations.value.has(relation.id) || nonPropagatingEdges.value.has(relation.id))
+                        ? !nonPropagatingEdges.value.has(relation.id)
+                        : null
             };
         });
 }
@@ -524,7 +870,11 @@ function extractIssueRelations(relationPartner: GraphRelationPartnerInfoFragment
     return Array.from(aggregatedRelations.values());
 }
 
-function extractComponent(component: GraphComponentVersionInfoFragment, remove: boolean): ComponentVersion {
+function extractComponent(
+    component: GraphComponentVersionInfoFragment,
+    remove: boolean,
+    componentVersionLookup: Map<string, string[]>
+): ComponentVersion {
     const createRelation = component.relateFromComponent;
     const interfaces: Interface[] = component.interfaceDefinitions.nodes
         .filter((definition) => definition.visibleInterface != undefined)
@@ -535,25 +885,75 @@ function extractComponent(component: GraphComponentVersionInfoFragment, remove: 
                 name: definition.interfaceSpecificationVersion.interfaceSpecification.name,
                 version: definition.interfaceSpecificationVersion.version,
                 style: extractShapeStyle(definition.interfaceSpecificationVersion.interfaceSpecification.template),
-                issueTypes: extractIssueTypes(inter),
+                issueTypes: propagationMode.value ? [] : extractIssueTypes(inter),
                 contextMenu: {
                     type: "interface",
                     createRelation
                 } satisfies ContextMenuData
             };
         });
+    let issueTypes: IssueType[];
+    const issueRelations: IssueRelation[] = [];
+    if (propagationMode.value) {
+        const propagatedIssues = propagatedIssuesByComponent.value.get(component.component.id) ?? [];
+        const issueTypesMap = new Map<string, IssueType>();
+        const existingIssueRelations = new Set<string>();
+        propagatedIssues.forEach((issue) => {
+            const path = types.value.get(issue.type)?.iconPath;
+            const isOpen = states.value.get(issue.state)?.isOpen;
+            if (path != undefined && isOpen != undefined) {
+                const key = `${issue.type}-${isOpen}-${component.id}`;
+                if (issueTypesMap.has(key)) {
+                    issueTypesMap.get(key)!.count += 1;
+                } else {
+                    issueTypesMap.set(key, {
+                        id: key,
+                        name: issue.type,
+                        iconPath: path,
+                        count: 1,
+                        isOpen
+                    });
+                }
+                for (const propagation of issue.propagations) {
+                    const propagationSource = propagatedIssueLookup.value.get(propagation);
+                    if (propagationSource != undefined) {
+                        const isSourceOpen = states.value.get(propagationSource.state)?.isOpen;
+                        if (types.value.has(propagationSource.type) && isSourceOpen != undefined) {
+                            for (const sourceComponent of propagationSource.components) {
+                                for (const componentVersion of componentVersionLookup.get(sourceComponent) ?? []) {
+                                    const sourceKey = `${propagationSource.type}-${isSourceOpen}-${componentVersion}`;
+                                    if (!existingIssueRelations.has(sourceKey)) {
+                                        issueRelations.push({
+                                            start: sourceKey,
+                                            end: key,
+                                            count: 1
+                                        });
+                                        existingIssueRelations.add(sourceKey);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        issueTypes = Array.from(issueTypesMap.values());
+    } else {
+        issueTypes = extractIssueTypes(component);
+    }
     return {
         id: component.id,
         name: component.component.name,
         version: component.version,
         style: extractShapeStyle(component.component.template),
-        issueTypes: extractIssueTypes(component),
+        issueTypes,
         interfaces,
         contextMenu: {
             type: "component",
             remove,
             createRelation
-        } satisfies ContextMenuData
+        } satisfies ContextMenuData,
+        componentId: component.component.id
     };
 }
 

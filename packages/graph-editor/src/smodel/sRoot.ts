@@ -126,6 +126,17 @@ export class SRoot extends ViewportRootElementImpl {
                 cursor: pointer;
             }
 
+            .sprotty .propagation-path {
+                stroke: var(--propagation-shape-stroke-color-inactive);
+                stroke-width: calc(3px / var(--diagram-zoom));
+                stroke-dasharray: calc(6px / var(--diagram-zoom));
+                cursor: pointer;
+            }
+
+            .sprotty .propagation-path.propagation-path-active {
+                stroke: var(--propagation-shape-stroke-color-active);
+            }
+
             .sprotty .selectable {
                 cursor: pointer;
             }

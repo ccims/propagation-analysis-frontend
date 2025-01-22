@@ -36,7 +36,7 @@
             <div v-if="currentItems.length == 0 && loadedInitially" class="text-medium-emphasis">
                 No {{ name }} found
             </div>
-            <CustomList :items="currentItems" :to="to">
+            <CustomList :items="currentItems" :to="to" @click="$emit('click', $event)">
                 <template #item="{ item }">
                     <slot name="item" :item="item" />
                 </template>
@@ -107,6 +107,10 @@ const props = defineProps({
         required: false
     }
 });
+
+defineEmits<{
+    (event: "click", item: T): void;
+}>();
 
 const route = useRoute();
 const router = useRouter();

@@ -100,6 +100,10 @@ const props = defineProps({
     layout: {
         type: Object as PropType<GraphLayout>,
         required: true
+    },
+    propagationMode: {
+        type: Boolean,
+        required: true
     }
 });
 
@@ -113,6 +117,7 @@ const emit = defineEmits<{
     (event: "deleteRelation", value: string): void;
     (event: "addInterface", value: string): void;
     (event: "navigateTo", value: string): void;
+    (event: "togglePropagationEdge", value: string): void;
 }>();
 
 class ModelSource extends GraphModelSource {
@@ -125,7 +130,12 @@ class ModelSource extends GraphModelSource {
         emit("update:layout", resultingLayout);
     }
 
-    protected override handleSelectionChanged(selectedElements: SelectedElement<any>[]): void {
+    protected handleSelectionChanged(selectedElements: SelectedElement<any>[]): void {
+        for (const newSelected of selectedElements) {
+            if (!selecteds.value.some((selected) => selected.id === newSelected.id)) {
+                emit("togglePropagationEdge", newSelected.id);
+            }
+        }
         selecteds.value = selectedElements;
     }
 
@@ -210,5 +220,7 @@ watch(
     --issue-relation-stroke-color: rgba(var(--v-theme-on-surface), 0.4);
     --highlight-stroke-color: rgb(var(--v-theme-primary));
     --highlight-fill-color: rgba(var(--v-theme-primary), 0.4);
+    --propagation-shape-stroke-color-inactive: rgb(var(--v-theme-error));
+    --propagation-shape-stroke-color-active: rgb(var(--v-theme-primary));
 }
 </style>

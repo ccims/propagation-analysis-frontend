@@ -12,6 +12,7 @@ export class SRelation extends SSelectable implements Relation {
     style!: RelationStyle;
     selected = false;
     path!: RelationPath | null;
+    propagationModeActive!: boolean | null;
     /**
      * This is to prevent sprotty from trying to move the canvas
      */
