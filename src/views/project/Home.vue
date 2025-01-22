@@ -240,7 +240,7 @@ import CreateInterfaceSpecificationVersionDialog from "@/components/dialog/Creat
 import { ItemManager } from "@/components/PaginatedList.vue";
 import { Component, PropagatedIssue } from "@/util/propagation/issueModel";
 import { defaultPropagationConfig } from "@/util/propagation/defaultPropagationConfig";
-import { propagateIssues } from "@/util/propagation/propagation";
+import { extractCharacteristics, propagateIssues } from "@/util/propagation/propagation";
 import { testPropagation } from "@/util/propagation/scoreCalculation";
 
 type ProjectGraph = NodeReturnType<"getProjectGraph", "Project">;
@@ -487,21 +487,9 @@ const componentsWithLookup = computed(() => {
 });
 
 const allCharacteristics = computed(() => {
-    const characteristics = new Set<string>();
-    const config = propagationConfig.value;
-    Object.values(config.schemas).forEach((schema) => {
-        schema.characteristics.forEach((characteristic) => {
-            characteristics.add(characteristic);
-        });
-    });
-    config.rules.forEach((rule) => {
-        (rule.filterIssue.characteristics ?? []).forEach((characteristic) => {
-            characteristics.add(characteristic);
-        });
-    });
-    const sortedCharacteristics = Array.from(characteristics);
-    sortedCharacteristics.sort();
-    return sortedCharacteristics;
+    const characteristics = extractCharacteristics(propagationConfig.value);
+    characteristics.sort();
+    return characteristics;
 });
 
 const propagatedIssuesAndRelations = computed(() => {
@@ -606,7 +594,7 @@ watch(
 const propagatedIssuesByComponent = computed(() => {
     const issues = new Map<string, PropagatedIssue[]>();
     allPropagatedIssues.value.forEach((issue) => {
-        issue.components.forEach((component) => {
+        issue.componentsAndInterfaces.forEach((component) => {
             if (issues.has(component)) {
                 issues.get(component)!.push(issue);
             } else {
@@ -653,7 +641,7 @@ function propagateIssue(issue: Issue) {
             state: issue.state.id,
             template: issue.template.id,
             propagations: [],
-            components: [propagationComponent.value!.componentId],
+            componentsAndInterfaces: [propagationComponent.value!.componentId],
             characteristics: selectedCharacteristics.value
         });
     });
@@ -919,7 +907,7 @@ function extractComponent(
                     if (propagationSource != undefined) {
                         const isSourceOpen = states.value.get(propagationSource.state)?.isOpen;
                         if (types.value.has(propagationSource.type) && isSourceOpen != undefined) {
-                            for (const sourceComponent of propagationSource.components) {
+                            for (const sourceComponent of propagationSource.componentsAndInterfaces) {
                                 for (const componentVersion of componentVersionLookup.get(sourceComponent) ?? []) {
                                     const sourceKey = `${propagationSource.type}-${isSourceOpen}-${componentVersion}`;
                                     if (!existingIssueRelations.has(sourceKey)) {

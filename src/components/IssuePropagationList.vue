@@ -20,7 +20,7 @@
             }}</v-chip>
         </div>
         <div class="mt-1 d-flex flex-wrap ga-2 align-center">
-            <v-chip v-for="component in item.components" :key="component" color="primary">
+            <v-chip v-for="component in item.componentsAndInterfaces" :key="component" color="primary">
                 {{ components.get(component)?.name ?? "Error" }}
             </v-chip>
             <v-spacer />

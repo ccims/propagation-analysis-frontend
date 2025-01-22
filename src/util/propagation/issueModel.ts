@@ -6,14 +6,36 @@ export interface PropagatedIssue {
     type: string;
     template: string;
     title?: string;
-    components: string[];
+    componentsAndInterfaces: string[];
     characteristics: string[];
+}
+
+export interface TemplatedNode {
+    id: string;
+    template: string;
+    templatedFields: Record<string, any>
 }
 
 export interface Component {
     id: string;
     name: string;
     template: string;
+    interfaces: Interface[];
+    intraComponentDependencySpecifications: IntraComponentDependencySpecification[];
+}
+
+export interface Interface {
+    id: string;
+    name: string;
+    template: string;
+    component: string;
+}
+
+export interface IntraComponentDependencySpecification {
+    id: string;
+    name: string;
+    incoming: string[];
+    outgoing: string[];
 }
 
 export interface Relation {

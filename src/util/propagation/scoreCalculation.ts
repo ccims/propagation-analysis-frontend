@@ -45,7 +45,7 @@ export function testPropagation(config: IssuePropagationConfig, context: Omit<Pr
                         type: issue.type,
                         template: "IssueTemplate",
                         title: issue.description,
-                        components: [mapComponentToId(issue.initialComponent)],
+                        componentsAndInterfaces: [mapComponentToId(issue.initialComponent)],
                         characteristics: issue.initialCharacteristics
                     }
                 ]
@@ -54,7 +54,7 @@ export function testPropagation(config: IssuePropagationConfig, context: Omit<Pr
         );
         const expectedComponents = issue.propagation.map((component) => mapComponentToId(component));
         const expectedComponentsSet = new Set(expectedComponents);
-        const actualComponentsSet = new Set(propagationResult.issues.flatMap((issue) => issue.components));
+        const actualComponentsSet = new Set(propagationResult.issues.flatMap((issue) => issue.componentsAndInterfaces));
         console.log(actualComponentsSet);
         const allComponents = new Set(context.components.map((component) => component.id));
         allComponents.delete(mapComponentToId(issue.initialComponent));

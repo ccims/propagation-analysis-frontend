@@ -11,7 +11,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["API breaking bug"]
+            characteristics: ["API breaking bug"],
+            templatedFields: {}
         },
         propagatedAPIBug: {
             template: true,
@@ -22,7 +23,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["API bug"]
+            characteristics: ["API bug"],
+            templatedFields: {}
         },
         frontendCallsAPIBug: {
             template: true,
@@ -33,7 +35,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["API bug"]
+            characteristics: ["API bug"],
+            templatedFields: {}
         },
         domainModelIssue: {
             template: true,
@@ -44,7 +47,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["Domain model bug"]
+            characteristics: ["Domain model bug"],
+            templatedFields: {}
         },
         libraryVersionUpdateIssue: {
             template: true,
@@ -55,7 +59,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["Library version update"]
+            characteristics: ["Library version update"],
+            templatedFields: {}
         },
         dtoBug: {
             template: true,
@@ -66,7 +71,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["DTO bug"]
+            characteristics: ["DTO bug"],
+            templatedFields: {}
         },
         dtoFeature: {
             template: true,
@@ -77,7 +83,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["DTO feature"]
+            characteristics: ["DTO feature"],
+            templatedFields: {}
         },
         missingEventCall: {
             template: true,
@@ -88,7 +95,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "results in",
                 direction: "outgoing"
             },
-            characteristics: ["Missing event call"]
+            characteristics: ["Missing event call"],
+            templatedFields: {}
         },
         upstreamDomainModelChange: {
             template: true,
@@ -99,7 +107,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["Domain model change - downstream to upstream"]
+            characteristics: ["Domain model change - downstream to upstream"],
+            templatedFields: {}
         },
         downstreamDomainModelChange: {
             template: true,
@@ -110,7 +119,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["Domain model change - upstream to downstream"]
+            characteristics: ["Domain model change - upstream to downstream"],
+            templatedFields: {}
         },
         serviceUnavailableDueToInfrastructureFail: {
             template: true,
@@ -121,7 +131,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["Service unavailable"]
+            characteristics: ["Service unavailable"],
+            templatedFields: {}
         },
         serviceUnavailableGeneral: {
             template: true,
@@ -132,7 +143,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["Call failed due to unavailability"]
+            characteristics: ["Call failed due to unavailability"],
+            templatedFields: {}
         },
         propagatedFeatureRequestDownToUp: {
             template: true,
@@ -143,7 +155,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             relationToSource: {
                 type: "Depends on",
                 direction: "outgoing"
-            }
+            },
+            templatedFields: {}
         },
         propagatedFeatureRequestUpToDown: {
             template: true,
@@ -154,7 +167,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             relationToSource: {
                 type: "Depends on",
                 direction: "outgoing"
-            }
+            },
+            templatedFields: {}
         },
         dbUnreachableBug: {
             template: true,
@@ -165,7 +179,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["Database unreachable"]
+            characteristics: ["Database unreachable"],
+            templatedFields: {}
         },
         libBreakingChange: {
             template: true,
@@ -176,7 +191,8 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["Library breaking change"]
+            characteristics: ["Library breaking change"],
+            templatedFields: {}
         },
         dtoParsingBug: {
             template: true,
@@ -187,10 +203,11 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
                 type: "Depends on",
                 direction: "outgoing"
             },
-            characteristics: ["DTO parsing error"]
+            characteristics: ["DTO parsing error"],
+            templatedFields: {}
         }
     },
-    rules: [
+    interComponentRules: [
         {
             /* Bug propagation rule for broken APIs which again break service APIs */
             filterIssue: {
@@ -202,10 +219,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["b329efdb-cba9-4d98-9a84-712a1aa87e37", "a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f588bd56-242b-43d5-ae89-236cbcad2c6a", "f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "backward",
@@ -222,10 +241,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "backward",
@@ -242,10 +263,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "backward",
@@ -262,10 +285,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "both",
@@ -282,10 +307,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["b329efdb-cba9-4d98-9a84-712a1aa87e37"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f588bd56-242b-43d5-ae89-236cbcad2c6a"]
             },
             propagationDirection: "backward",
@@ -302,10 +329,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "backward",
@@ -322,10 +351,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["b329efdb-cba9-4d98-9a84-712a1aa87e37"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f588bd56-242b-43d5-ae89-236cbcad2c6a"]
             },
             propagationDirection: "backward",
@@ -342,10 +373,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "both",
@@ -362,10 +395,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "both",
@@ -382,10 +417,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "both",
@@ -402,10 +439,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "forward",
@@ -422,10 +461,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "backward",
@@ -442,14 +483,16 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["d3ac8499-cb22-42b5-a546-71e85ad24d03"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: [
                     "f038bccd-fdff-4b87-ae34-b409052182a9",
                     "15146d59-ca2e-4874-9f69-556bb42d5b81",
                     "b6d6d545-2a04-4b3e-a574-43d8a228fb43"
                 ]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["6b2f34f7-1624-4173-b4fc-bf7ce80d6b3e"]
             },
             propagationDirection: "backward",
@@ -466,10 +509,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "backward",
@@ -486,10 +531,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "forward",
@@ -506,10 +553,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "backward",
@@ -526,10 +575,12 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["19d8222e-b5e2-4a58-b2a6-003527bcfee5"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["8c056afc-9d6e-4de1-bf5b-090dd2fe726c"]
             },
             propagationDirection: "backward",
@@ -546,14 +597,17 @@ export const defaultPropagationConfig: IssuePropagationConfig = {
             filterRelation: {
                 template: ["a90e2493-7bd0-4c4f-9529-2dcdde480ba7"]
             },
-            filterStartComponent: {
+            filterRelationStart: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9", "15146d59-ca2e-4874-9f69-556bb42d5b81"]
             },
-            filterEndComponent: {
+            filterRelationEnd: {
+                type: "component",
                 template: ["f038bccd-fdff-4b87-ae34-b409052182a9"]
             },
             propagationDirection: "backward",
             newIssueSchema: "dtoParsingBug"
         }
-    ]
+    ],
+    intraComponentRules: []
 };

@@ -1,7 +1,6 @@
 import { unref } from "vue";
 import { Component, PropagatedIssue, PropagationContext, Relation } from "./issueModel";
-import { ComponentFilter, IssuePropagationConfig, PropagationRule } from "./propagationConfig";
-import { is } from "@babel/types";
+import { ComponentFilter, IssuePropagationConfig, MetaFilter, PropagationRule } from "./propagationConfig";
 
 interface Relations {
     incoming: Relation[];
@@ -50,12 +49,12 @@ export function propagateIssues(
             characteristics: [...issue.characteristics]
         }));
     const issuesToPropagate = newPropagatedIssues.flatMap((issue) =>
-        issue.components.map((componentId) => ({ issue, componentId }))
+        issue.componentsAndInterfaces.map((componentId) => ({ issue, componentId }))
     );
 
     const propagatedIssuesByComponent = new Map<string, PropagatedIssue[]>();
     for (const issue of newPropagatedIssues) {
-        for (const componentId of issue.components) {
+        for (const componentId of issue.componentsAndInterfaces) {
             if (propagatedIssuesByComponent.has(componentId)) {
                 propagatedIssuesByComponent.get(componentId)!.push(issue);
             } else {
@@ -98,7 +97,7 @@ export function propagateIssues(
                 state,
                 type,
                 template,
-                components: [component.id],
+                componentsAndInterfaces: [component.id],
                 characteristics: [...schema.characteristics]
             };
 
@@ -226,4 +225,41 @@ function doesComponentMatchFilter(component: Component, filter: ComponentFilter,
         }
     }
     return component.name.match(filter.name) != null;
+}
+
+function matchesMetaFilter<T extends object, V>(filter: MetaFilter<T>, matchesFilter: (value: V, filter: T) => boolean, value: V): boolean {
+    if ("and" in filter) {
+        return filter.and.every((subFilter) => matchesMetaFilter(subFilter, matchesFilter, value));
+    } else if ("or" in filter) {
+        return filter.or.some((subFilter) => matchesMetaFilter(subFilter, matchesFilter, value));
+    } else if ("not" in filter) {
+        return !matchesMetaFilter(filter.not, matchesFilter, value);
+    } else {
+        return matchesFilter(value, filter);
+    }
+}
+
+export function extractCharacteristics(config: IssuePropagationConfig): string[] {
+    const characteristics = new Set<string>();
+    for (const schema of Object.values(config.schemas)) {
+        for (const characteristic of schema.characteristics) {
+            characteristics.add(characteristic);
+        }
+    }
+    const issueFilters = [...config.intraComponentRules, ...config.interComponentRules].map((rule) => rule.filterIssue);
+    while (issueFilters.length > 0) {
+        const filter = issueFilters.pop()!;
+        if ("characteristics" in filter) {
+            for (const characteristic of filter.characteristics ?? []) {
+                characteristics.add(characteristic);
+            }
+        } else if ("and" in filter) {
+            issueFilters.push(...filter.and);
+        } else if ("or" in filter) {
+            issueFilters.push(...filter.or);
+        } else if ("not" in filter) {
+            issueFilters.push(filter.not);
+        }
+    }
+    return [...characteristics];
 }
