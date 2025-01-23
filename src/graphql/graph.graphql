@@ -91,6 +91,10 @@ fragment GraphComponentVersionInfo on ComponentVersion {
                     template {
                         ...GraphRelationPartnerTemplateInfo
                     }
+                    templatedFields {
+                        name
+                        value
+                    }
                 }
             }
         }
@@ -100,6 +104,30 @@ fragment GraphComponentVersionInfo on ComponentVersion {
         name
         template {
             ...GraphRelationPartnerTemplateInfo
+        }
+        templatedFields {
+            name
+            value
+        }
+    }
+    intraComponentDependencySpecifications {
+        nodes {
+            id
+            name
+            incomingParticipants {
+                nodes {
+                    interface {
+                        id
+                    }
+                }
+            }
+            outgoingParticipants {
+                nodes {
+                    interface {
+                        id
+                    }
+                }
+            }
         }
     }
     relateFromComponent: hasPermission(permission: RELATE_FROM_COMPONENT)
@@ -141,6 +169,10 @@ fragment GraphRelationPartnerInfo on RelationPartner {
             }
             end {
                 id
+            }
+            templatedFields {
+                name
+                value
             }
         }
     }

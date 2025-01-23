@@ -420,76 +420,81 @@ const propagationMode = computed(() => {
     return propagationIssue.value != undefined;
 });
 
-const propagationWindow = computed(() => {
-    return propagationMode.value ? 1 : 0;
-});
-
-const sortFields = {
-    Updated: IssueOrderField.LastUpdatedAt
-};
-
-const itemManager: ItemManager<Issue, IssueOrderField> = {
-    fetchItems: async function (
-        filter: string | undefined,
-        orderBy: IssueOrder[],
-        count: number,
-        page: number
-    ): Promise<[Issue[], number]> {
-        if (filter == undefined) {
-            const res = await client.getIssueList({
-                orderBy,
-                count,
-                skip: page * count,
-                trackable: propagationComponent.value!.componentId
-            });
-            const issues = (res.node as Trackable).issues;
-            return [issues.nodes, issues.totalCount];
-        } else {
-            const res = await client.getFilteredIssueList({
-                query: filter,
-                count,
-                filter: { trackables: { any: { id: { eq: trackableId.value } } } }
-            });
-            return [res.searchIssues, res.searchIssues.length];
-        }
-    }
-};
-
 const nonPropagatingEdges = ref(new Set<string>());
 const createdPropagatingIssues = ref<PropagatedIssue[]>([]);
 const propagationConfig = ref(defaultPropagationConfig);
 const selectedCharacteristics = ref<string[]>([]);
 
-const componentsWithLookup = computed(() => {
+const mappedComponents = computed(() => {
     const graph = originalGraph.value;
     if (graph == undefined) {
         return undefined;
     }
     const components = new Map<string, Component>();
-    const componentLookup = new Map<string, string>();
     for (const component of graph.components.nodes) {
-        componentLookup.set(component.id, component.component.id);
-        for (const inter of component.interfaceDefinitions.nodes) {
-            if (inter.visibleInterface != undefined) {
-                componentLookup.set(inter.visibleInterface.id, component.component.id);
-            }
-        }
         if (components.has(component.id)) {
             continue;
         }
-        components.set(component.component.id, {
-            id: component.component.id,
+        components.set(component.id, {
+            id: component.id,
             name: component.component.name,
-            template: component.component.template.id
+            template: component.component.template.id,
+            templatedFields: Object.fromEntries(
+                component.component.templatedFields.map((field) => [field.name, field.value])
+            ),
+            interfaces: component.interfaceDefinitions.nodes
+                .filter((definition) => definition.visibleInterface != undefined)
+                .map((definition) => {
+                    const inter = definition.visibleInterface!;
+                    return {
+                        id: inter.id,
+                        name: definition.interfaceSpecificationVersion.interfaceSpecification.name,
+                        template: definition.interfaceSpecificationVersion.interfaceSpecification.template.id,
+                        templatedFields: Object.fromEntries(
+                            definition.interfaceSpecificationVersion.interfaceSpecification.templatedFields.map(
+                                (field) => [field.name, field.value]
+                            )
+                        ),
+                        component: component.component.id
+                    };
+                }),
+            intraComponentDependencySpecifications: component.intraComponentDependencySpecifications.nodes.map(
+                (spec) => {
+                    return {
+                        id: spec.id,
+                        name: spec.name,
+                        incoming: spec.incomingParticipants.nodes.map((participant) => participant.interface.id),
+                        outgoing: spec.outgoingParticipants.nodes.map((participant) => participant.interface.id)
+                    };
+                }
+            )
         });
     }
-    return { components, componentLookup };
+    return components;
 });
 
 const allCharacteristics = computed(() => {
     const characteristics = extractCharacteristics(propagationConfig.value);
     characteristics.sort();
     return characteristics;
+});
+
+const propagatingMappedRelations = computed(() => {
+    const graph = originalGraph.value;
+    if (graph == undefined) {
+        return [];
+    }
+    return graph.components.nodes.flatMap((component) => {
+        return [
+            ...mapRelations(component),
+            ...component.interfaceDefinitions.nodes.flatMap((definition) => {
+                if (definition.visibleInterface != undefined) {
+                    return mapRelations(definition.visibleInterface);
+                }
+                return [];
+            })
+        ];
+    });
 });
 
 const propagatedIssuesAndRelations = computed(() => {
@@ -500,28 +505,30 @@ const propagatedIssuesAndRelations = computed(() => {
             propagatingRelations: new Set<string>()
         };
     }
-    const { components, componentLookup } = componentsWithLookup.value!;
-    const relations = graph.components.nodes.flatMap((component) => {
-        return component.outgoingRelations.nodes
-            .filter((relation) => !nonPropagatingEdges.value.has(relation.id))
-            .map((relation) => {
-                return {
-                    id: relation.id,
-                    from: componentLookup.get(component.id)!,
-                    to: componentLookup.get(relation.end!.id)!,
-                    template: relation.template.id
-                };
-            });
-    });
+    const components = mappedComponents.value!;
     return propagateIssues(
         {
             components: [...components.values()],
             issues: createdPropagatingIssues.value,
-            relations
+            relations: propagatingMappedRelations.value
         },
         propagationConfig.value
     );
 });
+
+function mapRelations(relationPartner: GraphRelationPartnerInfoFragment) {
+    return relationPartner.outgoingRelations.nodes
+        .filter((relation) => !nonPropagatingEdges.value.has(relation.id))
+        .map((relation) => {
+            return {
+                id: relation.id,
+                from: relationPartner.id,
+                to: relation.end!.id,
+                template: relation.template.id,
+                templatedFields: Object.fromEntries(relation.templatedFields.map((field) => [field.name, field.value]))
+            };
+        });
+}
 
 const allPropagatedIssues = computed(() => {
     return propagatedIssuesAndRelations.value.issues;
@@ -642,7 +649,8 @@ function propagateIssue(issue: Issue) {
             template: issue.template.id,
             propagations: [],
             componentsAndInterfaces: [propagationComponent.value!.componentId],
-            characteristics: selectedCharacteristics.value
+            characteristics: selectedCharacteristics.value,
+            templatedFields: Object.fromEntries(issue.templatedFields.map((field) => [field.name, field.value]))
         });
     });
 }
@@ -663,20 +671,10 @@ function doTestPropagation() {
             propagatingRelations: new Set<string>()
         };
     }
-    const { components, componentLookup } = componentsWithLookup.value!;
-    const relations = graph.components.nodes.flatMap((component) => {
-        return component.outgoingRelations.nodes.map((relation) => {
-            return {
-                id: relation.id,
-                from: componentLookup.get(component.id)!,
-                to: componentLookup.get(relation.end!.id)!,
-                template: relation.template.id
-            };
-        });
-    });
+    const components = mappedComponents.value!;
     return testPropagation(propagationConfig.value, {
         components: [...components.values()],
-        relations
+        relations: propagatingMappedRelations.value
     });
 }
 
@@ -694,7 +692,7 @@ const propagationData = computed<PropagationData>(() => {
         states: states.value,
         allCharacteristics: allCharacteristics.value,
         allPropagatedIssues: allPropagatedIssues.value,
-        componentsWithLookup: componentsWithLookup.value
+        components: mappedComponents.value ?? new Map()
     };
 });
 

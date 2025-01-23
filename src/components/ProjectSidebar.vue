@@ -106,7 +106,7 @@
                         />
                         <IssuePropagationList
                             :items="propagationData.allPropagatedIssues"
-                            :components="propagationData.componentsWithLookup?.components ?? new Map()"
+                            :components="propagationData.components ?? new Map()"
                             :types="propagationData.types"
                             :states="propagationData.states"
                             @create-issue="$emit('create-issue', $event)"
@@ -351,10 +351,7 @@ export interface PropagationData {
     states: Map<string, { isOpen: boolean }>;
     allCharacteristics: string[];
     allPropagatedIssues: PropagatedIssue[];
-    componentsWithLookup?: {
-        components: Map<string, Component>;
-        componentLookup: Map<string, string>;
-    };
+    components: Map<string, Component>;
 }
 
 const propagationMode = computed(() => {

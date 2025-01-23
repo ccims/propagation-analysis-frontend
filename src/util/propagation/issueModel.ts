@@ -13,7 +13,7 @@ export interface PropagatedIssue extends Omit<TemplatedNode, "id"> {
 export interface TemplatedNode {
     id: string;
     template: string;
-    templatedFields: Record<string, any>
+    templatedFields: Record<string, any>;
 }
 
 export interface Component extends TemplatedNode {

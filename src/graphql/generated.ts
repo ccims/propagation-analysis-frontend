@@ -19277,6 +19277,11 @@ export type GetProjectGraphQuery = {
                                               | { __typename?: "ComponentVersion"; id: string }
                                               | { __typename?: "Interface"; id: string }
                                               | null;
+                                          templatedFields: Array<{
+                                              __typename?: "JSONField";
+                                              name: string;
+                                              value?: any | null;
+                                          }>;
                                       }>;
                                   };
                                   aggregatedIssues: {
@@ -19334,6 +19339,11 @@ export type GetProjectGraphQuery = {
                                               dash?: Array<number> | null;
                                           } | null;
                                       };
+                                      templatedFields: Array<{
+                                          __typename?: "JSONField";
+                                          name: string;
+                                          value?: any | null;
+                                      }>;
                                   };
                               };
                           }>;
@@ -19355,6 +19365,29 @@ export type GetProjectGraphQuery = {
                                   dash?: Array<number> | null;
                               } | null;
                           };
+                          templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
+                      };
+                      intraComponentDependencySpecifications: {
+                          __typename?: "IntraComponentDependencySpecificationConnection";
+                          nodes: Array<{
+                              __typename?: "IntraComponentDependencySpecification";
+                              id: string;
+                              name: string;
+                              incomingParticipants: {
+                                  __typename?: "IntraComponentDependencyParticipantConnection";
+                                  nodes: Array<{
+                                      __typename?: "IntraComponentDependencyParticipant";
+                                      interface: { __typename?: "Interface"; id: string };
+                                  }>;
+                              };
+                              outgoingParticipants: {
+                                  __typename?: "IntraComponentDependencyParticipantConnection";
+                                  nodes: Array<{
+                                      __typename?: "IntraComponentDependencyParticipant";
+                                      interface: { __typename?: "Interface"; id: string };
+                                  }>;
+                              };
+                          }>;
                       };
                       outgoingRelations: {
                           __typename?: "RelationConnection";
@@ -19376,6 +19409,7 @@ export type GetProjectGraphQuery = {
                                   | { __typename?: "ComponentVersion"; id: string }
                                   | { __typename?: "Interface"; id: string }
                                   | null;
+                              templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
                           }>;
                       };
                       aggregatedIssues: {
@@ -19518,6 +19552,7 @@ export type GraphInfoFragment = {
                                     | { __typename?: "ComponentVersion"; id: string }
                                     | { __typename?: "Interface"; id: string }
                                     | null;
+                                templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
                             }>;
                         };
                         aggregatedIssues: {
@@ -19566,6 +19601,7 @@ export type GraphInfoFragment = {
                                     dash?: Array<number> | null;
                                 } | null;
                             };
+                            templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
                         };
                     };
                 }>;
@@ -19583,6 +19619,29 @@ export type GraphInfoFragment = {
                     fill?: { __typename?: "FillStyle"; color: string } | null;
                     stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
                 };
+                templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
+            };
+            intraComponentDependencySpecifications: {
+                __typename?: "IntraComponentDependencySpecificationConnection";
+                nodes: Array<{
+                    __typename?: "IntraComponentDependencySpecification";
+                    id: string;
+                    name: string;
+                    incomingParticipants: {
+                        __typename?: "IntraComponentDependencyParticipantConnection";
+                        nodes: Array<{
+                            __typename?: "IntraComponentDependencyParticipant";
+                            interface: { __typename?: "Interface"; id: string };
+                        }>;
+                    };
+                    outgoingParticipants: {
+                        __typename?: "IntraComponentDependencyParticipantConnection";
+                        nodes: Array<{
+                            __typename?: "IntraComponentDependencyParticipant";
+                            interface: { __typename?: "Interface"; id: string };
+                        }>;
+                    };
+                }>;
             };
             outgoingRelations: {
                 __typename?: "RelationConnection";
@@ -19604,6 +19663,7 @@ export type GraphInfoFragment = {
                         | { __typename?: "ComponentVersion"; id: string }
                         | { __typename?: "Interface"; id: string }
                         | null;
+                    templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
                 }>;
             };
             aggregatedIssues: {
@@ -19667,6 +19727,7 @@ export type GraphComponentVersionInfoFragment = {
                             | { __typename?: "ComponentVersion"; id: string }
                             | { __typename?: "Interface"; id: string }
                             | null;
+                        templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
                     }>;
                 };
                 aggregatedIssues: {
@@ -19715,6 +19776,7 @@ export type GraphComponentVersionInfoFragment = {
                             dash?: Array<number> | null;
                         } | null;
                     };
+                    templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
                 };
             };
         }>;
@@ -19732,6 +19794,29 @@ export type GraphComponentVersionInfoFragment = {
             fill?: { __typename?: "FillStyle"; color: string } | null;
             stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
         };
+        templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
+    };
+    intraComponentDependencySpecifications: {
+        __typename?: "IntraComponentDependencySpecificationConnection";
+        nodes: Array<{
+            __typename?: "IntraComponentDependencySpecification";
+            id: string;
+            name: string;
+            incomingParticipants: {
+                __typename?: "IntraComponentDependencyParticipantConnection";
+                nodes: Array<{
+                    __typename?: "IntraComponentDependencyParticipant";
+                    interface: { __typename?: "Interface"; id: string };
+                }>;
+            };
+            outgoingParticipants: {
+                __typename?: "IntraComponentDependencyParticipantConnection";
+                nodes: Array<{
+                    __typename?: "IntraComponentDependencyParticipant";
+                    interface: { __typename?: "Interface"; id: string };
+                }>;
+            };
+        }>;
     };
     outgoingRelations: {
         __typename?: "RelationConnection";
@@ -19746,6 +19831,7 @@ export type GraphComponentVersionInfoFragment = {
                 stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
             };
             end?: { __typename?: "ComponentVersion"; id: string } | { __typename?: "Interface"; id: string } | null;
+            templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
         }>;
     };
     aggregatedIssues: {
@@ -19812,6 +19898,7 @@ type GraphRelationPartnerInfo_ComponentVersion_Fragment = {
                 stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
             };
             end?: { __typename?: "ComponentVersion"; id: string } | { __typename?: "Interface"; id: string } | null;
+            templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
         }>;
     };
     aggregatedIssues: {
@@ -19856,6 +19943,7 @@ type GraphRelationPartnerInfo_Interface_Fragment = {
                 stroke?: { __typename?: "StrokeStyle"; color?: string | null; dash?: Array<number> | null } | null;
             };
             end?: { __typename?: "ComponentVersion"; id: string } | { __typename?: "Interface"; id: string } | null;
+            templatedFields: Array<{ __typename?: "JSONField"; name: string; value?: any | null }>;
         }>;
     };
     aggregatedIssues: {
@@ -30165,6 +30253,10 @@ export const GraphRelationPartnerInfoFragmentDoc = gql`
                 end {
                     id
                 }
+                templatedFields {
+                    name
+                    value
+                }
             }
         }
         aggregatedIssues {
@@ -30215,6 +30307,10 @@ export const GraphComponentVersionInfoFragmentDoc = gql`
                         template {
                             ...GraphRelationPartnerTemplateInfo
                         }
+                        templatedFields {
+                            name
+                            value
+                        }
                     }
                 }
             }
@@ -30224,6 +30320,30 @@ export const GraphComponentVersionInfoFragmentDoc = gql`
             name
             template {
                 ...GraphRelationPartnerTemplateInfo
+            }
+            templatedFields {
+                name
+                value
+            }
+        }
+        intraComponentDependencySpecifications {
+            nodes {
+                id
+                name
+                incomingParticipants {
+                    nodes {
+                        interface {
+                            id
+                        }
+                    }
+                }
+                outgoingParticipants {
+                    nodes {
+                        interface {
+                            id
+                        }
+                    }
+                }
             }
         }
         relateFromComponent: hasPermission(permission: RELATE_FROM_COMPONENT)
