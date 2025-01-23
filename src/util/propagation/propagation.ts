@@ -25,6 +25,7 @@ import {
     TemplatedNodeFilter
 } from "./propagationConfig";
 import { apply } from "json-logic-js";
+import deepEqual from "deep-equal";
 
 interface Relations {
     incoming: Relation[];
@@ -42,9 +43,22 @@ export function propagateIssues(
 class IssuePropagator {
     private readonly componentLookup = new Map<string, Component>();
     private readonly interfaceLookup = new Map<string, Interface>();
+    private readonly relationPartnerLookup = new Map<string, Component | Interface>();
     private readonly relationLookup = new Map<string, Relation>();
     private readonly relationPartnerRelationsLookup = new Map<string, Relations>();
+    /**
+     * Counter for numerical ids
+     */
     private refCounter: number;
+    private propagatedIssuesByComponent = new Map<string, Set<PropagatedIssue>>();
+    /**
+     * The resulting propagated issues to return
+     */
+    private readonly propagatedIssues: PropagatedIssue[] = [];
+    /**
+     * Unhandled propagations
+     */
+    private readonly issuesToPropagate: { issue: PropagatedIssue; nodeId: string }[] = [];
 
     constructor(
         private readonly context: PropagationContext,
@@ -58,9 +72,11 @@ class IssuePropagator {
 
         for (const component of context.components) {
             this.componentLookup.set(component.id, component);
+            this.relationPartnerLookup.set(component.id, component);
             this.relationPartnerRelationsLookup.set(component.id, { incoming: [], outgoing: [] });
             for (const inter of component.interfaces) {
                 this.interfaceLookup.set(inter.id, inter);
+                this.relationPartnerLookup.set(inter.id, inter);
                 this.relationPartnerRelationsLookup.set(inter.id, { incoming: [], outgoing: [] });
             }
         }
@@ -74,102 +90,116 @@ class IssuePropagator {
                 this.relationPartnerRelationsLookup.get(relation.to)!.incoming.push(relation);
             }
         }
-    }
 
-    propagateIssues(): { issues: PropagatedIssue[]; propagatingRelations: Set<string> } {
-        const newPropagatedIssues = this.context.issues
+        this.propagatedIssues = this.context.issues
             .filter((issue) => typeof issue.id === "string")
             .map((issue) => ({
                 ...issue,
                 propagations: [...issue.propagations],
                 characteristics: [...issue.characteristics]
             }));
-        const issuesToPropagate = newPropagatedIssues.flatMap((issue) =>
-            issue.componentsAndInterfaces.map((componentId) => ({ issue, componentId }))
+
+        for (const issue of this.propagatedIssues) {
+            for (const nodeId of issue.componentsAndInterfaces) {
+                this.addIssueToComponent(issue, nodeId);
+            }
+        }
+
+        this.issuesToPropagate = this.propagatedIssues.flatMap((issue) =>
+            issue.componentsAndInterfaces.map((nodeId) => ({ issue, nodeId }))
         );
+    }
 
-        const propagatedIssuesByComponent = new Map<string, PropagatedIssue[]>();
-        for (const issue of newPropagatedIssues) {
-            for (const componentId of issue.componentsAndInterfaces) {
-                if (propagatedIssuesByComponent.has(componentId)) {
-                    propagatedIssuesByComponent.get(componentId)!.push(issue);
-                } else {
-                    propagatedIssuesByComponent.set(componentId, [issue]);
-                }
-            }
-        }
-
-        function propagateIssue(issue: PropagatedIssue, component: Component, rule: PropagationRule) {
-            const newIssueSchema = rule.newIssueSchema;
-
-            const schema = config.schemas[newIssueSchema];
-
-            const state = schema.state === true ? issue.state : schema.state!;
-            const type = schema.type === true ? issue.type : schema.type!;
-            const template = schema.template === true ? issue.template : schema.template!;
-
-            const issuesOnComponent = propagatedIssuesByComponent.get(component.id) ?? [];
-            if (issuesOnComponent.some((existingIssue) => existingIssue.propagations.includes(issue.ref))) {
-                return;
-            }
-            const existingIssue = issuesOnComponent.find(
-                (existingIssue) =>
-                    existingIssue.state === state && existingIssue.type === type && existingIssue.template === template
-            );
-            if (existingIssue) {
-                existingIssue.propagations.push(issue.ref);
-                for (const characteristic of schema.characteristics) {
-                    if (!existingIssue.characteristics.includes(characteristic)) {
-                        existingIssue.characteristics.push(characteristic);
-                    }
-                }
-            } else {
-                const newIssue: PropagatedIssue = {
-                    ref: refCounter++,
-                    propagations: [issue.ref],
-                    title: schema.title === true ? issue.title : schema.title,
-                    state,
-                    type,
-                    template,
-                    componentsAndInterfaces: [component.id],
-                    characteristics: [...schema.characteristics]
-                };
-
-                if (propagatedIssuesByComponent.has(component.id)) {
-                    propagatedIssuesByComponent.get(component.id)!.push(newIssue);
-                } else {
-                    propagatedIssuesByComponent.set(component.id, [newIssue]);
-                }
-                newPropagatedIssues.push(newIssue);
-                issuesToPropagate.push({ issue: newIssue, componentId: component.id });
-            }
-        }
+    propagateIssues(): { issues: PropagatedIssue[]; propagatingRelations: Set<string> } {
         const propagatingRelations = new Set<string>();
-        while (issuesToPropagate.length > 0) {
-            const { issue, componentId } = issuesToPropagate.pop()!;
-            const component = componentLookup.get(componentId);
-            const relations = componentRelationLookup.get(componentId);
-            if (relations == undefined) {
-                console.log(componentId);
-            }
-            config.rules.forEach((rule) => {
+        while (this.issuesToPropagate.length > 0) {
+            const { issue, nodeId } = this.issuesToPropagate.pop()!;
+            const node = this.relationPartnerLookup.get(nodeId);
+            const relations = this.relationPartnerRelationsLookup.get(nodeId);
+            this.config.interComponentRules.forEach((rule) => {
                 for (const outgoingRelation of relations!.outgoing) {
-                    const relatedComponent = componentLookup.get(outgoingRelation.to);
-                    if (doesIssuePropagate(issue, rule, component!, relatedComponent!, outgoingRelation, true)) {
+                    const related = this.relationPartnerLookup.get(outgoingRelation.to);
+                    if (this.doesIssuePropagateInter(issue, rule, node!, related!, outgoingRelation, true)) {
                         propagatingRelations.add(outgoingRelation.id);
-                        propagateIssue(issue, relatedComponent!, rule);
+                        this.propagateIssue(issue, related!, rule);
                     }
                 }
                 for (const incomingRelation of relations!.incoming) {
-                    const relatedComponent = componentLookup.get(incomingRelation.from);
-                    if (doesIssuePropagate(issue, rule, relatedComponent!, component!, incomingRelation, false)) {
+                    const related = this.relationPartnerLookup.get(incomingRelation.from);
+                    if (this.doesIssuePropagateInter(issue, rule, related!, node!, incomingRelation, false)) {
                         propagatingRelations.add(incomingRelation.id);
-                        propagateIssue(issue, relatedComponent!, rule);
+                        this.propagateIssue(issue, related!, rule);
                     }
                 }
             });
         }
-        return { issues: newPropagatedIssues, propagatingRelations };
+        return { issues: this.propagatedIssues, propagatingRelations };
+    }
+
+    private propagateIssue(issue: PropagatedIssue, node: Component | Interface, rule: InterComponentPropagationRule) {
+        const newIssueSchema = rule.newIssueSchema;
+
+        const schema = this.config.schemas[newIssueSchema];
+
+        const state = schema.state === true ? issue.state : schema.state!;
+        const type = schema.type === true ? issue.type : schema.type!;
+        const template = schema.template === true ? issue.template : schema.template!;
+
+        const componentId = "component" in node ? node.component : node.id;
+
+        const issuesOnComponent = this.propagatedIssuesByComponent.get(componentId) ?? [];
+        if ([...issuesOnComponent].some((existingIssue) => existingIssue.propagations.includes(issue.ref))) {
+            return;
+        }
+        const existingIssue = [...issuesOnComponent].find(
+            (existingIssue) =>
+                existingIssue.state === state &&
+                existingIssue.type === type &&
+                existingIssue.template === template &&
+                deepEqual(existingIssue.templatedFields, issue.templatedFields)
+        );
+        if (existingIssue) {
+            existingIssue.propagations.push(issue.ref);
+            for (const characteristic of schema.characteristics) {
+                if (!existingIssue.characteristics.includes(characteristic)) {
+                    existingIssue.characteristics.push(characteristic);
+                }
+            }
+        } else {
+            const newIssue: PropagatedIssue = {
+                ref: this.refCounter++,
+                propagations: [issue.ref],
+                title: (schema.title === true ? issue.title : schema.title) ?? undefined,
+                state,
+                type,
+                template,
+                componentsAndInterfaces: [node.id],
+                characteristics: [...schema.characteristics],
+                templatedFields: Object.fromEntries(
+                    Object.entries(schema.templatedFields).map(([field, value]) =>
+                        value === true ? [field, issue.templatedFields[field]] : [field, value.value]
+                    )
+                )
+            };
+
+            this.addIssueToComponent(newIssue, componentId);
+            this.propagatedIssues.push(newIssue);
+            this.issuesToPropagate.push({ issue: newIssue, nodeId: node.id });
+        }
+    }
+
+    private addIssueToComponent(issue: PropagatedIssue, componentOrInterface: string) {
+        const relationPartner = this.relationPartnerLookup.get(componentOrInterface);
+        if (relationPartner == undefined) {
+            throw new Error(`Could not find component or interface with id ${componentOrInterface}`);
+        }
+        const componentId = "component" in relationPartner ? relationPartner.component : relationPartner.id;
+        const issuesOnComponent = this.propagatedIssuesByComponent.get(componentId);
+        if (issuesOnComponent == undefined) {
+            this.propagatedIssuesByComponent.set(componentId, new Set([issue]));
+        } else {
+            issuesOnComponent.add(issue);
+        }
     }
 
     private doesIssuePropagateInter(
@@ -245,7 +275,10 @@ class IssuePropagator {
         inter: Interface,
         fromComponent: boolean
     ): boolean {
-        if (rule.propagationDirection != "both" && (rule.propagationDirection === "component-interface") != fromComponent) {
+        if (
+            rule.propagationDirection != "both" &&
+            (rule.propagationDirection === "component-interface") != fromComponent
+        ) {
             return false;
         }
 

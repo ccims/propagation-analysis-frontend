@@ -32,10 +32,8 @@
 </template>
 <script setup lang="ts">
 import { Component, PropagatedIssue } from "@/util/propagation/issueModel";
-import { PropType, watch } from "vue";
+import { PropType } from "vue";
 import IssueIcon from "./IssueIcon.vue";
-import { ref } from "vue";
-import { useClient } from "@/graphql/client";
 
 const props = defineProps({
     items: {
