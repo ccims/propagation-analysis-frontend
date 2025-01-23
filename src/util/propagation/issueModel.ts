@@ -1,4 +1,4 @@
-export interface PropagatedIssue {
+export interface PropagatedIssue extends Omit<TemplatedNode, "id"> {
     id?: string;
     ref: string | number;
     propagations: (string | number)[];
@@ -16,18 +16,14 @@ export interface TemplatedNode {
     templatedFields: Record<string, any>
 }
 
-export interface Component {
-    id: string;
+export interface Component extends TemplatedNode {
     name: string;
-    template: string;
     interfaces: Interface[];
     intraComponentDependencySpecifications: IntraComponentDependencySpecification[];
 }
 
-export interface Interface {
-    id: string;
+export interface Interface extends TemplatedNode {
     name: string;
-    template: string;
     component: string;
 }
 
@@ -38,9 +34,7 @@ export interface IntraComponentDependencySpecification {
     outgoing: string[];
 }
 
-export interface Relation {
-    id: string;
-    template: string;
+export interface Relation extends TemplatedNode {
     from: string;
     to: string;
 }
