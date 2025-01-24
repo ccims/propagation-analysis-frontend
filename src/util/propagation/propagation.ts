@@ -32,6 +32,11 @@ interface Relations {
     outgoing: Relation[];
 }
 
+interface IntraComponentDependencies {
+    incoming: IntraComponentDependencySpecification[];
+    outgoing: IntraComponentDependencySpecification[];
+}
+
 export function propagateIssues(
     context: PropagationContext,
     config: IssuePropagationConfig
@@ -46,6 +51,7 @@ class IssuePropagator {
     private readonly relationPartnerLookup = new Map<string, Component | Interface>();
     private readonly relationLookup = new Map<string, Relation>();
     private readonly relationPartnerRelationsLookup = new Map<string, Relations>();
+    private readonly intraComponentDependenciesLookup = new Map<string, IntraComponentDependencies>();
     /**
      * Counter for numerical ids
      */
@@ -78,6 +84,7 @@ class IssuePropagator {
                 this.interfaceLookup.set(inter.id, inter);
                 this.relationPartnerLookup.set(inter.id, inter);
                 this.relationPartnerRelationsLookup.set(inter.id, { incoming: [], outgoing: [] });
+                this.intraComponentDependenciesLookup.set(inter.id, { incoming: [], outgoing: [] });
             }
         }
 
@@ -91,6 +98,17 @@ class IssuePropagator {
             }
         }
 
+        for (const component of context.components) {
+            for (const dependency of component.intraComponentDependencySpecifications) {
+                for (const outgoing of dependency.outgoing) {
+                    this.intraComponentDependenciesLookup.get(outgoing)!.outgoing.push(dependency);
+                }
+                for (const incoming of dependency.incoming) {
+                    this.intraComponentDependenciesLookup.get(incoming)!.incoming.push(dependency);
+                }
+            }
+        }
+
         this.propagatedIssues = this.context.issues
             .filter((issue) => typeof issue.id === "string")
             .map((issue) => ({
@@ -101,7 +119,7 @@ class IssuePropagator {
 
         for (const issue of this.propagatedIssues) {
             for (const nodeId of issue.componentsAndInterfaces) {
-                this.addIssueToComponent(issue, nodeId);
+                this.addIssueToComponentOrInterface(issue, nodeId);
             }
         }
 
@@ -114,21 +132,66 @@ class IssuePropagator {
         const propagatingRelations = new Set<string>();
         while (this.issuesToPropagate.length > 0) {
             const { issue, nodeId } = this.issuesToPropagate.pop()!;
-            const node = this.relationPartnerLookup.get(nodeId);
+            const node = this.relationPartnerLookup.get(nodeId)!;
             const relations = this.relationPartnerRelationsLookup.get(nodeId);
             this.config.interComponentRules.forEach((rule) => {
                 for (const outgoingRelation of relations!.outgoing) {
                     const related = this.relationPartnerLookup.get(outgoingRelation.to);
-                    if (this.doesIssuePropagateInter(issue, rule, node!, related!, outgoingRelation, true)) {
+                    if (this.doesIssuePropagateInter(issue, rule, node, related!, outgoingRelation, true)) {
                         propagatingRelations.add(outgoingRelation.id);
-                        this.propagateIssue(issue, related!, rule);
+                        this.propagateIssueInter(issue, related!, rule);
                     }
                 }
                 for (const incomingRelation of relations!.incoming) {
                     const related = this.relationPartnerLookup.get(incomingRelation.from);
-                    if (this.doesIssuePropagateInter(issue, rule, related!, node!, incomingRelation, false)) {
+                    if (this.doesIssuePropagateInter(issue, rule, related!, node, incomingRelation, false)) {
                         propagatingRelations.add(incomingRelation.id);
-                        this.propagateIssue(issue, related!, rule);
+                        this.propagateIssueInter(issue, related!, rule);
+                    }
+                }
+            });
+            this.config.intraComponentRules.forEach((rule) => {
+                if ("filterStart" in rule) {
+                    if ("component" in node) {
+                        const component = this.componentLookup.get(node.component)!;
+                        const dependencies = this.intraComponentDependenciesLookup.get(node.id)!;
+                        for (const outgoing of dependencies.outgoing) {
+                            for (const propagatedTo of this.getPropagatedToInterfaces(
+                                issue,
+                                rule,
+                                component,
+                                node,
+                                outgoing,
+                                true
+                            )) {
+                                this.propagateIssueIntra(issue, propagatedTo);
+                            }
+                        }
+                        for (const incoming of dependencies.incoming) {
+                            for (const propagatedTo of this.getPropagatedToInterfaces(
+                                issue,
+                                rule,
+                                component,
+                                node,
+                                incoming,
+                                false
+                            )) {
+                                this.propagateIssueIntra(issue, propagatedTo);
+                            }
+                        }
+                    }
+                } else {
+                    if ("component" in node) {
+                        const component = this.componentLookup.get(node.component)!;
+                        if (this.doesIssuePropagateIntraComponentInterface(issue, rule, component, node, false)) {
+                            this.propagateIssueIntra(issue, node);
+                        }
+                    } else {
+                        for (const inter of node.interfaces) {
+                            if (this.doesIssuePropagateIntraComponentInterface(issue, rule, node, inter, true)) {
+                                this.propagateIssueIntra(issue, inter);
+                            }
+                        }
                     }
                 }
             });
@@ -136,7 +199,11 @@ class IssuePropagator {
         return { issues: this.propagatedIssues, propagatingRelations };
     }
 
-    private propagateIssue(issue: PropagatedIssue, node: Component | Interface, rule: InterComponentPropagationRule) {
+    private propagateIssueInter(
+        issue: PropagatedIssue,
+        node: Component | Interface,
+        rule: InterComponentPropagationRule
+    ) {
         const newIssueSchema = rule.newIssueSchema;
 
         const schema = this.config.schemas[newIssueSchema];
@@ -182,13 +249,20 @@ class IssuePropagator {
                 )
             };
 
-            this.addIssueToComponent(newIssue, componentId);
+            this.addIssueToComponentOrInterface(newIssue, componentId);
             this.propagatedIssues.push(newIssue);
             this.issuesToPropagate.push({ issue: newIssue, nodeId: node.id });
         }
     }
 
-    private addIssueToComponent(issue: PropagatedIssue, componentOrInterface: string) {
+    private propagateIssueIntra(issue: PropagatedIssue, node: Component | Interface) {
+        if (!issue.componentsAndInterfaces.includes(node.id)) {
+            this.addIssueToComponentOrInterface(issue, node.id);
+            this.issuesToPropagate.push({ issue, nodeId: node.id });
+        }
+    }
+
+    private addIssueToComponentOrInterface(issue: PropagatedIssue, componentOrInterface: string) {
         const relationPartner = this.relationPartnerLookup.get(componentOrInterface);
         if (relationPartner == undefined) {
             throw new Error(`Could not find component or interface with id ${componentOrInterface}`);
@@ -230,30 +304,23 @@ class IssuePropagator {
         return true;
     }
 
-    private doesIssuePropagateIntraInterfaceInterface(
+    private getPropagatedToInterfaces(
         issue: PropagatedIssue,
         rule: InterfaceInterfacePropagationRule,
         component: Component,
-        start: Interface,
-        end: Interface,
+        inter: Interface,
         intraComponentDependencySpecification: IntraComponentDependencySpecification,
         isOutgoing: boolean
-    ): boolean {
+    ): Interface[] {
         if (rule.propagationDirection != "both" && (rule.propagationDirection === "forward") != isOutgoing) {
-            return false;
+            return [];
         }
 
         if (!this.matchesMetaFilter(rule.filterIssue, this.doesIssueMatchFilter.bind(this), issue)) {
-            return false;
-        }
-        if (!this.matchesMetaFilter(rule.filterStart, this.doesMatchBaseFilter.bind(this), start)) {
-            return false;
-        }
-        if (!this.matchesMetaFilter(rule.filterEnd, this.doesMatchBaseFilter.bind(this), end)) {
-            return false;
+            return [];
         }
         if (!this.matchesMetaFilter(rule.filterComponent, this.doesMatchBaseFilter.bind(this), component)) {
-            return false;
+            return [];
         }
         if (
             !this.matchesMetaFilter(
@@ -262,10 +329,26 @@ class IssuePropagator {
                 intraComponentDependencySpecification
             )
         ) {
-            return false;
+            return [];
         }
-
-        return true;
+        if (
+            !this.matchesMetaFilter(
+                isOutgoing ? rule.filterStart : rule.filterEnd,
+                this.doesMatchBaseFilter.bind(this),
+                inter
+            )
+        ) {
+            return [];
+        }
+        return intraComponentDependencySpecification[isOutgoing ? "outgoing" : "incoming"]
+            .map((id) => this.interfaceLookup.get(id)!)
+            .filter((inter) =>
+                this.matchesMetaFilter(
+                    isOutgoing ? rule.filterEnd : rule.filterStart,
+                    this.doesMatchBaseFilter.bind(this),
+                    inter
+                )
+            );
     }
 
     private doesIssuePropagateIntraComponentInterface(
