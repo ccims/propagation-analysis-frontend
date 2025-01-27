@@ -46,7 +46,8 @@ export function testPropagation(config: IssuePropagationConfig, context: Omit<Pr
                         template: "IssueTemplate",
                         title: issue.description,
                         componentsAndInterfaces: [mapComponentToId(issue.initialComponent)],
-                        characteristics: issue.initialCharacteristics
+                        characteristics: issue.initialCharacteristics,
+                        templatedFields: {}
                     }
                 ]
             },

@@ -76,7 +76,7 @@
                     </div>
                 </div>
                 <ProjectSidebar
-                    v-model="selectedElement"
+                    v-model="selectedElementInfo"
                     v-model:selected-characteristics="selectedCharacteristics"
                     :propagation-issue="propagationIssue"
                     @update:propagation-issue="
@@ -88,11 +88,8 @@
                             }
                         }
                     "
-                    :original-graph="originalGraph ?? undefined"
                     :propagation-data="propagationData"
                     @create-issue="createIssue"
-                    @propagate-issue="propagateIssue"
-                    @close-propagation="propagationIssue = undefined"
                 />
             </div>
         </div>
@@ -229,7 +226,7 @@ import { inject } from "vue";
 import { eventBusKey } from "@/util/keys";
 import RelationTemplateAutocomplete from "@/components/input/RelationTemplateAutocomplete.vue";
 import { IdObject } from "@/util/types";
-import ProjectSidebar, { PropagationData } from "@/components/ProjectSidebar.vue";
+import ProjectSidebar, { PropagationData, SelectableElementInfo } from "@/components/ProjectSidebar.vue";
 import ViewAutocomplete from "@/components/input/ViewAutocomplete.vue";
 import CreateViewDialog from "@/components/dialog/CreateViewDialog.vue";
 import CreateComponentDialog from "@/components/dialog/CreateComponentDialog.vue";
@@ -237,11 +234,11 @@ import CreateComponentVersionDialog from "@/components/dialog/CreateComponentVer
 import InterfaceSpecificationVersionAutocomplete from "@/components/input/InterfaceSpecificationVersionAutocomplete.vue";
 import CreateInterfaceSpecificationDialog from "@/components/dialog/CreateInterfaceSpecificationDialog.vue";
 import CreateInterfaceSpecificationVersionDialog from "@/components/dialog/CreateInterfaceSpecificationVersionDialog.vue";
-import { ItemManager } from "@/components/PaginatedList.vue";
 import { Component, PropagatedIssue } from "@/util/propagation/issueModel";
 import { defaultPropagationConfig } from "@/util/propagation/defaultPropagationConfig";
 import { extractCharacteristics, propagateIssues } from "@/util/propagation/propagation";
 import { testPropagation } from "@/util/propagation/scoreCalculation";
+import { debugPropagationConfig } from "@/util/propagation/debugPropagationConfig";
 
 type ProjectGraph = NodeReturnType<"getProjectGraph", "Project">;
 type GraphLayoutSource = Pick<ProjectGraph, "relationLayouts" | "relationPartnerLayouts">;
@@ -422,7 +419,7 @@ const propagationMode = computed(() => {
 
 const nonPropagatingEdges = ref(new Set<string>());
 const createdPropagatingIssues = ref<PropagatedIssue[]>([]);
-const propagationConfig = ref(defaultPropagationConfig);
+const propagationConfig = ref(debugPropagationConfig);
 const selectedCharacteristics = ref<string[]>([]);
 
 const mappedComponents = computed(() => {
@@ -616,15 +613,6 @@ const propagatingRelations = computed(() => {
     return propagatedIssuesAndRelations.value.propagatingRelations;
 });
 
-watch(selectedElement, (element) => {
-    const type = element?.contextMenu?.data?.type;
-    if (type == "component" || type == "interface") {
-        showSidebarForComponent(element!.id);
-    } else {
-        closePropagationSidebar();
-    }
-});
-
 function closePropagationSidebar() {
     propagationComponent.value = undefined;
     propagationIssue.value = undefined;
@@ -648,7 +636,7 @@ function propagateIssue(issue: Issue) {
             state: issue.state.id,
             template: issue.template.id,
             propagations: [],
-            componentsAndInterfaces: [propagationComponent.value!.componentId],
+            componentsAndInterfaces: [propagationComponent.value!.id],
             characteristics: selectedCharacteristics.value,
             templatedFields: Object.fromEntries(issue.templatedFields.map((field) => [field.name, field.value]))
         });
@@ -694,6 +682,70 @@ const propagationData = computed<PropagationData>(() => {
         allPropagatedIssues: allPropagatedIssues.value,
         components: mappedComponents.value ?? new Map()
     };
+});
+
+const selectableElementLookup = computed(() => {
+    const graph = originalGraph.value;
+    const lookup = new Map<string, SelectableElementInfo>();
+    if (graph != undefined) {
+        graph.components.nodes.forEach((component) => {
+            const componentName = `${component.component.name} (${component.version})`;
+            lookup.set(component.id, {
+                componentVersion: component,
+                affectedEntity: component,
+                affectedEntityName: componentName
+            });
+            component.aggregatedIssues.nodes.forEach((issue) => {
+                lookup.set(issue.id, {
+                    componentVersion: component,
+                    affectedEntity: component,
+                    aggregatedIssue: issue,
+                    affectedEntityName: componentName
+                });
+            });
+            component.interfaceDefinitions.nodes.forEach((definition) => {
+                const interfaceName = `${definition.interfaceSpecificationVersion.interfaceSpecification.name} (${definition.interfaceSpecificationVersion.version})`;
+                if (definition.visibleInterface != undefined) {
+                    lookup.set(definition.visibleInterface.id, {
+                        componentVersion: component,
+                        affectedEntity: definition.visibleInterface,
+                        affectedEntityName: interfaceName
+                    });
+                    definition.visibleInterface.aggregatedIssues.nodes.forEach((issue) => {
+                        lookup.set(issue.id, {
+                            componentVersion: component,
+                            affectedEntity: definition.visibleInterface!,
+                            aggregatedIssue: issue,
+                            affectedEntityName: interfaceName
+                        });
+                    });
+                }
+            });
+        });
+    }
+    return lookup;
+});
+
+const selectedElementInfo = computed<SelectableElementInfo | undefined>({
+    get: () => {
+        if (selectedElement.value == undefined) {
+            return undefined;
+        }
+        return selectableElementLookup.value.get(selectedElement.value.id);
+    },
+    set: (value) => {
+        if (value == undefined) {
+            selectedElement.value = undefined;
+        }
+    }
+});
+
+watch(selectedElementInfo, (element) => {
+    if (element?.componentVersion?.id != undefined) {
+        showSidebarForComponent(element?.componentVersion?.id);
+    } else {
+        closePropagationSidebar();
+    }
 });
 
 // endregion

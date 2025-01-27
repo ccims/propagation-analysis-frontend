@@ -1,7 +1,7 @@
 <template>
     <v-slide-x-reverse-transition>
         <v-sheet
-            v-if="selectedElementInfo != undefined"
+            v-if="model != undefined"
             class="sidebar mt-3 py-2 flex-1-1-0 align-self-stretch d-flex flex-column h-0 pointer-events-all"
             color="surface-elevated-3"
             rounded="xl"
@@ -11,12 +11,12 @@
                     <v-icon icon="mdi-arrow-left" />
                 </IconButton>
                 <span class="text-subtitle-1 text-ellipses flex-grow-1 ml-2">{{
-                    selectedElementInfo.componentVersion.component.name
+                    model.componentVersion.component.name
                 }}</span>
                 <IconButton
                     :to="{
                         name: 'component-issues',
-                        params: { trackable: selectedElementInfo!.componentVersion.component.id }
+                        params: { trackable: model!.componentVersion.component.id }
                     }"
                 >
                     <v-icon icon="mdi-arrow-right-circle-outline" />
@@ -35,7 +35,7 @@
                             :sort-fields="sortFields"
                             :to="() => undefined"
                             :sort-ascending-initially="false"
-                            :dependencies="[selectedElementInfo.componentVersion.id, issueFilter, propagationIssue]"
+                            :dependencies="[model.componentVersion.id, issueFilter, propagationIssue]"
                             @click="(event: Issue) => (propagationIssue = event)"
                         >
                             <template #item="{ item }">
@@ -50,13 +50,13 @@
                                         closable
                                         close-icon="mdi-close"
                                         :prepend-icon="
-                                            selectedElementInfo.affectedEntity.__typename == 'ComponentVersion'
+                                            model.affectedEntity.__typename == 'ComponentVersion'
                                                 ? '$component-version'
                                                 : '$interface'
                                         "
                                         @click:close="issueFilter.affectedEntity = undefined"
                                     >
-                                        {{ selectedElementInfo.affectedEntityName }}
+                                        {{ model.affectedEntityName }}
                                     </v-chip>
                                     <v-chip
                                         v-if="issueFilter.type != undefined"
@@ -129,8 +129,6 @@ import {
     IssueOrder,
     IssueOrderField
 } from "@/graphql/generated";
-import { SelectedElement } from "@gropius/graph-editor";
-import { ContextMenuData } from "./GraphEditor.vue";
 import { NodeReturnType, useClient } from "@/graphql/client";
 import IssueListItem from "@/components/IssueListItem.vue";
 import IssueTypeIcon from "@/components/IssueTypeIcon.vue";
@@ -144,11 +142,7 @@ type Issue = IssueListItemInfoFragment;
 type Trackable = NodeReturnType<"getIssueList", "Component">;
 type AggregatedIssue = NodeReturnType<"getIssueListOnAggregatedIssue", "AggregatedIssue">;
 
-const props = defineProps({
-    originalGraph: {
-        type: Object as PropType<ProjectGraph>,
-        required: false
-    },
+defineProps({
     propagationData: {
         type: Object as PropType<PropagationData>,
         required: true
@@ -156,7 +150,7 @@ const props = defineProps({
 });
 
 const model = defineModel({
-    type: Object as PropType<SelectedElement<ContextMenuData>>,
+    type: Object as PropType<SelectableElementInfo>,
     required: false
 });
 
@@ -185,63 +179,16 @@ interface IssueFilterSpec {
 
 const issueFilter = ref<IssueFilterSpec>({});
 
-interface SelectableElementInfo {
+export interface SelectableElementInfo {
     componentVersion: GraphComponentVersionInfoFragment;
     affectedEntity: GraphRelationPartnerInfoFragment;
     affectedEntityName: string;
     aggregatedIssue?: GraphAggregatedIssueInfoFragment;
 }
 
-const selectableElementLookup = computed(() => {
-    const graph = props.originalGraph;
-    const lookup = new Map<string, SelectableElementInfo>();
-    if (graph != undefined) {
-        graph.components.nodes.forEach((component) => {
-            const componentName = `${component.component.name} (${component.version})`;
-            lookup.set(component.id, {
-                componentVersion: component,
-                affectedEntity: component,
-                affectedEntityName: componentName
-            });
-            component.aggregatedIssues.nodes.forEach((issue) => {
-                lookup.set(issue.id, {
-                    componentVersion: component,
-                    affectedEntity: component,
-                    aggregatedIssue: issue,
-                    affectedEntityName: componentName
-                });
-            });
-            component.interfaceDefinitions.nodes.forEach((definition) => {
-                const interfaceName = `${definition.interfaceSpecificationVersion.interfaceSpecification.name} (${definition.interfaceSpecificationVersion.version})`;
-                if (definition.visibleInterface != undefined) {
-                    lookup.set(definition.visibleInterface.id, {
-                        componentVersion: component,
-                        affectedEntity: definition.visibleInterface,
-                        affectedEntityName: interfaceName
-                    });
-                    definition.visibleInterface.aggregatedIssues.nodes.forEach((issue) => {
-                        lookup.set(issue.id, {
-                            componentVersion: component,
-                            affectedEntity: definition.visibleInterface!,
-                            aggregatedIssue: issue,
-                            affectedEntityName: interfaceName
-                        });
-                    });
-                }
-            });
-        });
-    }
-    return lookup;
-});
 
-const selectedElementInfo = computed<SelectableElementInfo | undefined>(() => {
-    if (model.value == undefined) {
-        return undefined;
-    }
-    return selectableElementLookup.value.get(model.value.id);
-});
 
-watch(selectedElementInfo, (newValue) => {
+watch(model, (newValue) => {
     if (newValue != undefined) {
         const aggregatedIssue = newValue.aggregatedIssue;
         if (aggregatedIssue != undefined) {
@@ -296,7 +243,7 @@ const itemManager: ItemManager<Issue, IssueOrderField> = {
                 }
                 const res = await client.getIssueList({
                     ...parameters,
-                    trackable: selectedElementInfo.value!.componentVersion.component.id,
+                    trackable: model.value!.componentVersion.component.id,
                     filter: filterFields
                 });
                 const issues = (res.node as Trackable).issues;
@@ -324,7 +271,7 @@ const itemManager: ItemManager<Issue, IssueOrderField> = {
                     };
                 }
                 filterFields.trackables = {
-                    any: { id: { eq: selectedElementInfo.value!.componentVersion.component.id } }
+                    any: { id: { eq: model.value!.componentVersion.component.id } }
                 };
             } else {
                 filterFields.aggregatedBy = { any: { id: { eq: additionalFilter.aggregatedIssue } } };
@@ -342,7 +289,7 @@ const itemManager: ItemManager<Issue, IssueOrderField> = {
 function issueRoute(issue: IdObject): RouteLocationRaw {
     return {
         name: "component-issue",
-        params: { issue: issue.id, trackable: selectedElementInfo.value!.componentVersion.component.id }
+        params: { issue: issue.id, trackable: model.value!.componentVersion.component.id }
     };
 }
 

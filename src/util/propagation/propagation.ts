@@ -211,6 +211,11 @@ class IssuePropagator {
         const state = schema.state === true ? issue.state : schema.state!;
         const type = schema.type === true ? issue.type : schema.type!;
         const template = schema.template === true ? issue.template : schema.template!;
+        const templatedFields = schema.templatedFields === true ? issue.templatedFields : Object.fromEntries(
+            Object.entries(schema.templatedFields).map(([field, value]) =>
+                value === true ? [field, issue.templatedFields[field]] : [field, value.value]
+            )
+        )
 
         const componentId = "component" in node ? node.component : node.id;
 
@@ -223,7 +228,7 @@ class IssuePropagator {
                 existingIssue.state === state &&
                 existingIssue.type === type &&
                 existingIssue.template === template &&
-                deepEqual(existingIssue.templatedFields, issue.templatedFields)
+                deepEqual(existingIssue.templatedFields, templatedFields)
         );
         if (existingIssue) {
             existingIssue.propagations.push(issue.ref);
@@ -242,11 +247,7 @@ class IssuePropagator {
                 template,
                 componentsAndInterfaces: [node.id],
                 characteristics: [...schema.characteristics],
-                templatedFields: Object.fromEntries(
-                    Object.entries(schema.templatedFields).map(([field, value]) =>
-                        value === true ? [field, issue.templatedFields[field]] : [field, value.value]
-                    )
-                )
+                templatedFields
             };
 
             this.addIssueToComponentOrInterface(newIssue, componentId);
@@ -405,7 +406,7 @@ class IssuePropagator {
         filter: IntraComponentDependencySpecificationFilter
     ): boolean {
         if (filter.name == undefined) {
-            return false;
+            return true;
         }
         return intraComponentDependencySpecification.name.match(filter.name) != null;
     }
@@ -443,7 +444,7 @@ class IssuePropagator {
             return false;
         }
         if (filter.name == undefined) {
-            return false;
+            return true;
         }
         return node.name.match(filter.name) != null;
     }

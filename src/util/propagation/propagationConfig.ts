@@ -42,7 +42,7 @@ export interface PropagatedIssueSchema {
      * If null, the user needs to enter a value
      * If an object, use the value inside it
      */
-    templatedFields: Record<string, { value: any } | true>;
+    templatedFields: Record<string, { value: any } | true> | true;
     /**
      * Relations to the source issue that should be created
      * If undefined, no relations are created
