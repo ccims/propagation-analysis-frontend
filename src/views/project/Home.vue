@@ -461,7 +461,8 @@ const mappedComponents = computed(() => {
                         id: spec.id,
                         name: spec.name,
                         incoming: spec.incomingParticipants.nodes.map((participant) => participant.interface.id),
-                        outgoing: spec.outgoingParticipants.nodes.map((participant) => participant.interface.id)
+                        outgoing: spec.outgoingParticipants.nodes.map((participant) => participant.interface.id),
+                        type: spec.type?.name
                     };
                 }
             )

@@ -199,4 +199,5 @@ export interface InterfaceFilterBase extends TemplatedNodeFilter {
 
 export interface IntraComponentDependencySpecificationFilter {
     name?: string;
+    type?: (string | undefined)[];
 }

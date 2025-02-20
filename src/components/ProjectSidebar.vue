@@ -186,8 +186,6 @@ export interface SelectableElementInfo {
     aggregatedIssue?: GraphAggregatedIssueInfoFragment;
 }
 
-
-
 watch(model, (newValue) => {
     if (newValue != undefined) {
         const aggregatedIssue = newValue.aggregatedIssue;

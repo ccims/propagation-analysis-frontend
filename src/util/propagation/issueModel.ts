@@ -32,6 +32,7 @@ export interface IntraComponentDependencySpecification {
     name: string;
     incoming: string[];
     outgoing: string[];
+    type: string | undefined;
 }
 
 export interface Relation extends TemplatedNode {

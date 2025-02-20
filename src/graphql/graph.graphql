@@ -128,6 +128,10 @@ fragment GraphComponentVersionInfo on ComponentVersion {
                     }
                 }
             }
+            type {
+                id
+                name
+            }
         }
     }
     relateFromComponent: hasPermission(permission: RELATE_FROM_COMPONENT)

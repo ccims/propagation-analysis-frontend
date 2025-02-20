@@ -211,11 +211,14 @@ class IssuePropagator {
         const state = schema.state === true ? issue.state : schema.state!;
         const type = schema.type === true ? issue.type : schema.type!;
         const template = schema.template === true ? issue.template : schema.template!;
-        const templatedFields = schema.templatedFields === true ? issue.templatedFields : Object.fromEntries(
-            Object.entries(schema.templatedFields).map(([field, value]) =>
-                value === true ? [field, issue.templatedFields[field]] : [field, value.value]
-            )
-        )
+        const templatedFields =
+            schema.templatedFields === true
+                ? issue.templatedFields
+                : Object.fromEntries(
+                      Object.entries(schema.templatedFields).map(([field, value]) =>
+                          value === true ? [field, issue.templatedFields[field]] : [field, value.value]
+                      )
+                  );
 
         const componentId = "component" in node ? node.component : node.id;
 
@@ -405,6 +408,9 @@ class IssuePropagator {
         intraComponentDependencySpecification: IntraComponentDependencySpecification,
         filter: IntraComponentDependencySpecificationFilter
     ): boolean {
+        if (filter.type != undefined && !filter.type.includes(intraComponentDependencySpecification.type)) {
+            return false;
+        }
         if (filter.name == undefined) {
             return true;
         }
