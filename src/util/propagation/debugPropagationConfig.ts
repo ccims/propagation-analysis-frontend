@@ -23,7 +23,7 @@ export const debugPropagationConfig: IssuePropagationConfig = {
             filterRelationEnd: {
                 type: "component"
             },
-            newIssueSchema: "default",
+            newIssueSchema: "default"
         }
     ]
-}
+};

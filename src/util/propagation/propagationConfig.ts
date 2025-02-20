@@ -97,11 +97,11 @@ export interface InterComponentPropagationRule extends PropagationRule {
      */
     filterRelation: MetaFilter<RelationFilter>;
     /**
-     * This rule only applies to issues on the following components / interfaces
+     * This rule only applies to relations with the following start component/interface
      */
     filterRelationStart: MetaFilter<RelationPartnerFilter>;
     /**
-     * This rule only propagates issues to the following components / interfaces
+     * This rule only applies to relations with the following end component/interface
      */
     filterRelationEnd: MetaFilter<RelationPartnerFilter>;
     /**
