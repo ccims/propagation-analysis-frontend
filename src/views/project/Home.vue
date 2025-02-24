@@ -640,11 +640,20 @@ function propagateIssue(issue: Issue) {
             template: issue.template.id,
             propagations: [],
             componentsAndInterfaces: [propagationComponent.value!.id],
-            characteristics: selectedCharacteristics.value,
+            characteristics: [...selectedCharacteristics.value],
             templatedFields: Object.fromEntries(issue.templatedFields.map((field) => [field.name, field.value]))
         });
     });
 }
+
+watch(selectedCharacteristics, () => {
+    const first = createdPropagatingIssues.value[0];
+    if (first) {
+        first.characteristics = [...selectedCharacteristics.value];
+    }
+}, {
+    deep: true
+})
 
 function togglePropagationEdge(relation: string) {
     if (nonPropagatingEdges.value.has(relation)) {
