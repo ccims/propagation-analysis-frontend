@@ -22,6 +22,10 @@
                     <v-icon icon="mdi-arrow-right-circle-outline" />
                     <v-tooltip activator="parent">View all issues</v-tooltip>
                 </IconButton>
+                <IconButton v-if="propagationWindow == 0" @click="whatIfMode = true">
+                    <v-icon icon="mdi-help-circle-outline" />
+                    <v-tooltip activator="parent">What if analysis</v-tooltip>
+                </IconButton>
                 <IconButton @click="model = undefined">
                     <v-icon icon="mdi-close" />
                 </IconButton>
@@ -96,6 +100,25 @@
                         </PaginatedList>
                     </v-window-item>
                     <v-window-item :key="1" class="full-height issue-list-container">
+                        <IssueTemplateAutocomplete
+                            v-if="whatIfMode"
+                            v-model="template"
+                            class="mt-2 px-3"
+                        />
+                        <IssueTypeAutocomplete
+                            v-if="whatIfMode"
+                            v-model="type"
+                            :template="template"
+                            :disabled="!template"
+                            class="mt-2 px-3"
+                        />
+                        <IssueStateAutocomplete
+                            v-if="whatIfMode"
+                            v-model="state"
+                            :template="template"
+                            :disabled="!template"
+                            class="mt-2 px-3"
+                        />
                         <v-autocomplete
                             v-model="selectedCharacteristics"
                             :items="propagationData.allCharacteristics"
@@ -136,8 +159,10 @@ import { IdObject } from "@/util/types";
 import { RouteLocationRaw } from "vue-router";
 import { Component, PropagatedIssue } from "@/util/propagation/issueModel";
 import IssuePropagationList from "./IssuePropagationList.vue";
+import IssueTemplateAutocomplete from "./input/IssueTemplateAutocomplete.vue";
+import IssueTypeAutocomplete from "./input/IssueTypeAutocomplete.vue";
+import IssueStateAutocomplete from "./input/IssueStateAutocomplete.vue";
 
-type ProjectGraph = NodeReturnType<"getProjectGraph", "Project">;
 type Issue = IssueListItemInfoFragment;
 type Trackable = NodeReturnType<"getIssueList", "Component">;
 type AggregatedIssue = NodeReturnType<"getIssueListOnAggregatedIssue", "AggregatedIssue">;
@@ -157,6 +182,24 @@ const model = defineModel({
 const selectedCharacteristics = defineModel("selectedCharacteristics", {
     type: Array as PropType<string[]>,
     required: true
+});
+
+const template = defineModel("template", {
+    type: String,
+    required: false
+});
+const type = defineModel("type", {
+    type: String,
+    required: false
+});
+const state = defineModel("state", {
+    type: String,
+    required: false
+});
+
+const whatIfMode = defineModel("whatIfMode", {
+    type: Boolean,
+    required: false
 });
 
 const propagationIssue = defineModel("propagationIssue", {

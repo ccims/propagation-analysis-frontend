@@ -78,11 +78,16 @@
                 <ProjectSidebar
                     v-model="selectedElementInfo"
                     v-model:selected-characteristics="selectedCharacteristics"
+                    v-model:template="whatIfTemplate"
+                    v-model:type="whatIfType"
+                    v-model:state="whatIfState"
+                    v-model:what-if-mode="whatIfMode"
                     :propagation-issue="propagationIssue"
                     @update:propagation-issue="
                         (issue?: Issue) => {
                             if (issue == undefined) {
                                 propagationIssue = undefined;
+                                whatIfMode = false;
                             } else {
                                 propagateIssue(issue);
                             }
@@ -423,6 +428,45 @@ const createdPropagatingIssues = ref<PropagatedIssue[]>([]);
 const propagationConfig = ref(onlineBoutiqueRules);
 const validationSet = ref(onlineBoutiqueValidationSet);
 const selectedCharacteristics = ref<string[]>([]);
+const whatIfMode = ref(false);
+const whatIfTemplate = ref<string>();
+const whatIfType = ref<string>();
+const whatIfState = ref<string>();
+
+watchEffect(async () => {
+    if (whatIfMode.value) {
+        whatIfState.value ?? "" + whatIfType.value ?? "";
+        const type = whatIfType.value ? await client.issueType({ id: whatIfType.value }) : undefined;
+        if (type != undefined) {
+            types.value.set(whatIfType.value!, type.node as { iconPath: string });
+        }
+        const state = whatIfState.value ? await client.issueState({ id: whatIfState.value }) : undefined;
+        if (state != undefined) {
+            states.value.set(whatIfState.value!, state.node as { isOpen: boolean });
+        }
+        propagationIssue.value = {
+            id: "",
+            title: "What if analysis issue",
+            type: { iconPath: (type?.node as any)?.iconPath ?? "" },
+            state: { isOpen: (state?.node as any)?.isOpen ?? false }
+        } as any; // good enough for this
+
+        createdPropagatingIssues.value = [
+            {
+                id: "",
+                ref: "",
+                title: "What if analysis issue",
+                type: whatIfType.value ?? "",
+                state: whatIfState.value ?? "",
+                template: whatIfTemplate.value ?? "",
+                propagations: [],
+                componentsAndInterfaces: [propagationComponent.value!.id],
+                characteristics: [...selectedCharacteristics.value],
+                templatedFields: {}
+            }
+        ];
+    }
+});
 
 const mappedComponents = computed(() => {
     const graph = originalGraph.value;
@@ -506,6 +550,12 @@ const propagatedIssuesAndRelations = computed(() => {
         };
     }
     const components = mappedComponents.value!;
+    if (whatIfMode.value && (!whatIfType.value || !whatIfState.value)) {
+        return {
+            issues: [],
+            propagatingRelations: new Set<string>()
+        };
+    }
     return propagateIssues(
         {
             components: [...components.values()],
@@ -646,14 +696,18 @@ function propagateIssue(issue: Issue) {
     });
 }
 
-watch(selectedCharacteristics, () => {
-    const first = createdPropagatingIssues.value[0];
-    if (first) {
-        first.characteristics = [...selectedCharacteristics.value];
+watch(
+    selectedCharacteristics,
+    () => {
+        const first = createdPropagatingIssues.value[0];
+        if (first) {
+            first.characteristics = [...selectedCharacteristics.value];
+        }
+    },
+    {
+        deep: true
     }
-}, {
-    deep: true
-})
+);
 
 function togglePropagationEdge(relation: string) {
     if (nonPropagatingEdges.value.has(relation)) {

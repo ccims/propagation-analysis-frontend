@@ -2,7 +2,7 @@
     <v-sheet v-for="(item, idx) in items" :key="item.ref" rounded="xl" class="pa-2 mx-3" :class="{ 'mt-2': idx > 0 }">
         <div class="d-flex align-center">
             <IssueIcon
-                v-if="types.has(item.type) && states.has(item.state)"
+                v-if="types.get(item.type) && states.get(item.state)"
                 height="40px"
                 class="mr-2 flex-0-0"
                 :issue="{

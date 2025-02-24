@@ -16,7 +16,7 @@
 </template>
 <script setup lang="ts">
 import { DefaultIssueIconInfoFragment } from "@/graphql/generated";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { PropType } from "vue";
 import IssueTypeIcon from "./IssueTypeIcon.vue";
 
