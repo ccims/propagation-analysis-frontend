@@ -217,7 +217,7 @@ import {
     CreateRelationContext,
     SelectedElement
 } from "@gropius/graph-editor";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { onEvent } from "@/util/eventBus";
 import FilterChip from "@/components/input/FilterChip.vue";
@@ -235,10 +235,11 @@ import InterfaceSpecificationVersionAutocomplete from "@/components/input/Interf
 import CreateInterfaceSpecificationDialog from "@/components/dialog/CreateInterfaceSpecificationDialog.vue";
 import CreateInterfaceSpecificationVersionDialog from "@/components/dialog/CreateInterfaceSpecificationVersionDialog.vue";
 import { Component, PropagatedIssue } from "@/util/propagation/issueModel";
-import { defaultPropagationConfig } from "@/util/propagation/defaultPropagationConfig";
 import { extractCharacteristics, propagateIssues } from "@/util/propagation/propagation";
 import { testPropagation } from "@/util/propagation/scoreCalculation";
 import { debugPropagationConfig } from "@/util/propagation/debugPropagationConfig";
+import { onlineBoutiqueRules } from "@/util/propagation/online-boutique/rules";
+import { onlineBoutiqueValidationSet } from "@/util/propagation/online-boutique/validationSet";
 
 type ProjectGraph = NodeReturnType<"getProjectGraph", "Project">;
 type GraphLayoutSource = Pick<ProjectGraph, "relationLayouts" | "relationPartnerLayouts">;
@@ -419,7 +420,8 @@ const propagationMode = computed(() => {
 
 const nonPropagatingEdges = ref(new Set<string>());
 const createdPropagatingIssues = ref<PropagatedIssue[]>([]);
-const propagationConfig = ref(debugPropagationConfig);
+const propagationConfig = ref(onlineBoutiqueRules);
+const validationSet = ref(onlineBoutiqueValidationSet);
 const selectedCharacteristics = ref<string[]>([]);
 
 const mappedComponents = computed(() => {
@@ -652,20 +654,26 @@ function togglePropagationEdge(relation: string) {
     }
 }
 
-function doTestPropagation() {
-    const graph = originalGraph.value;
-    if (graph == undefined) {
-        return {
-            issues: [],
-            propagatingRelations: new Set<string>()
-        };
+watchEffect(() => {
+    {
+        const graph = originalGraph.value;
+        if (graph == undefined) {
+            return {
+                issues: [],
+                propagatingRelations: new Set<string>()
+            };
+        }
+        const components = mappedComponents.value!;
+        return testPropagation(
+            propagationConfig.value,
+            {
+                components: [...components.values()],
+                relations: propagatingMappedRelations.value
+            },
+            validationSet.value
+        );
     }
-    const components = mappedComponents.value!;
-    return testPropagation(propagationConfig.value, {
-        components: [...components.values()],
-        relations: propagatingMappedRelations.value
-    });
-}
+});
 
 const propagatedIssueLookup = computed(() => {
     const lookup = new Map<string | number, PropagatedIssue>();
