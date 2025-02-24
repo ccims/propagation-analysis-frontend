@@ -1,4 +1,5 @@
 import { ValidationIssue } from "../scoreCalculation";
+import { BUG, OPEN } from "./templates";
 
 export enum ComponentEnum {
     "frontend" = "8cc60e49-5e8f-48f5-a6f8-da3fef65a554",
@@ -12,48 +13,48 @@ export enum ComponentEnum {
 export const onlineBoutiqueValidationSet: ValidationIssue<ComponentEnum>[] = [
     {
         description: "Ad service is unreachable",
-        type: "Bug",
-        state: "Open",
+        type: BUG,
+        state: OPEN,
         initialCharacteristics: ["service unreachable"],
         initialComponent: ComponentEnum.adService,
         propagation: [ComponentEnum.frontend]
     },
     {
         description: "Ad service returns error response due to internal error",
-        type: "Bug",
-        state: "Open",
+        type: BUG,
+        state: OPEN,
         initialCharacteristics: ["error response"],
         initialComponent: ComponentEnum.adService,
         propagation: [ComponentEnum.frontend]
     },
     {
         description: "Latency of ad service is too high",
-        type: "Bug",
-        state: "Open",
+        type: BUG,
+        state: OPEN,
         initialCharacteristics: ["high latency", "request timeout"],
         initialComponent: ComponentEnum.adService,
         propagation: [ComponentEnum.frontend]
     },
     {
         description: "Payment service is unreachable",
-        type: "Bug",
-        state: "Open",
+        type: BUG,
+        state: OPEN,
         initialCharacteristics: ["service unreachable"],
         initialComponent: ComponentEnum.paymentService,
         propagation: [ComponentEnum.checkoutService, ComponentEnum.frontend]
     },
     {
         description: "Product catalog service is unreachable",
-        type: "Bug",
-        state: "Open",
+        type: BUG,
+        state: OPEN,
         initialCharacteristics: ["service unreachable"],
         initialComponent: ComponentEnum.productCatalogService,
         propagation: [ComponentEnum.recommendationService, ComponentEnum.frontend]
     },
     {
         description: "Currency service is unreachable",
-        type: "Bug",
-        state: "Open",
+        type: BUG,
+        state: OPEN,
         initialCharacteristics: ["service unreachable"],
         initialComponent: ComponentEnum.currencyService,
         propagation: [ComponentEnum.checkoutService, ComponentEnum.frontend]
