@@ -4,7 +4,7 @@
         v-model:layout="layout"
         :graph="graph"
         :propagation-mode="propagationMode"
-        @update:selected="selectedElement = $event"
+        @update:selected="updateSelectedElement"
         @update:layout="hasLayoutChanges = true"
         @remove-component="removeComponentVersion"
         @create-relation="beginCreateRelation"
@@ -1345,6 +1345,17 @@ function navigateTo(id: string) {
                 trackable: lookupInfo.componentVersion.component.id
             }
         });
+    }
+}
+
+function updateSelectedElement(event?: SelectedElement<ContextMenuData>) {
+    const propagationMode = propagationIssue.value != undefined;
+    if (propagationMode) {
+        if (!event) {
+            selectedElement.value = undefined;
+        }
+    } else {
+        selectedElement.value = event;
     }
 }
 </script>
