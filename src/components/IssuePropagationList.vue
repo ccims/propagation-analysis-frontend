@@ -21,7 +21,7 @@
         </div>
         <div class="mt-1 d-flex flex-wrap ga-2 align-center">
             <v-chip v-for="component in item.componentsAndInterfaces" :key="component" color="primary">
-                {{ components.get(component)?.name ?? "Error" }}
+                {{ names.get(component) ?? "Error" }}
             </v-chip>
             <v-spacer />
             <DefaultButton v-if="item.id == undefined" @click="$emit('create-issue', item)">
@@ -40,8 +40,8 @@ const props = defineProps({
         type: Array as PropType<PropagatedIssue[]>,
         required: true
     },
-    components: {
-        type: Object as PropType<Map<string, Component>>,
+    names: {
+        type: Object as PropType<Map<string, string>>,
         required: true
     },
     types: {

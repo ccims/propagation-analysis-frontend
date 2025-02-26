@@ -129,7 +129,7 @@
                         />
                         <IssuePropagationList
                             :items="propagationData.allPropagatedIssues"
-                            :components="propagationData.components ?? new Map()"
+                            :names="names"
                             :types="propagationData.types"
                             :states="propagationData.states"
                             @create-issue="$emit('create-issue', $event)"
@@ -167,7 +167,7 @@ type Issue = IssueListItemInfoFragment;
 type Trackable = NodeReturnType<"getIssueList", "Component">;
 type AggregatedIssue = NodeReturnType<"getIssueListOnAggregatedIssue", "AggregatedIssue">;
 
-defineProps({
+const props = defineProps({
     propagationData: {
         type: Object as PropType<PropagationData>,
         required: true
@@ -246,6 +246,17 @@ watch(model, (newValue) => {
         }
     }
 });
+
+const names = computed(() => {
+    const res = new Map<string, string>();
+    for (const [key, component] of props.propagationData.components) {
+        res.set(key, component.name);
+        for (const inter of component.interfaces) {
+            res.set(inter.id, inter.name);
+        }
+    }
+    return res;
+})
 
 const sortFields = {
     Updated: IssueOrderField.LastUpdatedAt

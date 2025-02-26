@@ -431,20 +431,16 @@ const propagationConfig = computed(() => {
     if (trackableId.value == "54fb170c-63cf-49ec-bba0-87439d5ee954") {
         return onlineBoutiqueRules;
     } else if (trackableId.value == "049a6b7d-6729-4a1b-bd7a-20ae2e4144f1") {
-        return misarchRules
+        return misarchRules;
     } else {
-        return {
-            schemas: {},
-            interComponentRules: [],
-            intraComponentRules: []
-        }
+        return misarchRules;
     }
 });
 const validationSet = computed<ValidationIssue<string>[]>(() => {
     if (trackableId.value == "54fb170c-63cf-49ec-bba0-87439d5ee954") {
         return onlineBoutiqueValidationSet;
     } else if (trackableId.value == "049a6b7d-6729-4a1b-bd7a-20ae2e4144f1") {
-        return misarchValidationSet
+        return misarchValidationSet;
     } else {
         return [];
     }
@@ -530,7 +526,7 @@ const mappedComponents = computed(() => {
                         name: spec.name,
                         incoming: spec.incomingParticipants.nodes.map((participant) => participant.interface.id),
                         outgoing: spec.outgoingParticipants.nodes.map((participant) => participant.interface.id),
-                        type: spec.type?.name
+                        type: spec.type?.id
                     };
                 }
             )
@@ -749,6 +745,9 @@ watchEffect(() => {
             };
         }
         const components = mappedComponents.value!;
+        if (validationSet.value.length == 0) {
+            return;
+        }
         return testPropagation(
             propagationConfig.value,
             {

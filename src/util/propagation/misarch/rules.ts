@@ -705,6 +705,14 @@ export const misarchRules: IssuePropagationConfig = {
             propagationDirection: "backward",
             ...microserviceGGFilter
         },
+        {
+            // microservice to "outgoing" interfaces
+            filterIssue: {
+                ...openBugFilter,
+                characteristics: [Characteristics.ApiBreakingBug]
+            },
+            ...microserviceToProvidedSyncFilter
+        },
         // #endregion
         // #region API breaking byzantine bug
         {

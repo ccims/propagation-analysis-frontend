@@ -27,7 +27,6 @@ export function testPropagation<T extends string>(
     context: Omit<PropagationContext, "issues">,
     validationSet: ValidationIssue<T>[]
 ): void {
-    //console.log(JSON.stringify(context, null, 2));
     const allRelationPartners = new Map<string, { id: string; name: string }>(
         context.components.flatMap((component) => {
             const name = component.name;
@@ -44,7 +43,7 @@ export function testPropagation<T extends string>(
                         [
                             inter.id,
                             {
-                                name: `${name} - ${inter.name}`,
+                                name: `${name}.${inter.name}`,
                                 id: component.id
                             }
                         ] as const
@@ -108,6 +107,7 @@ export function testPropagation<T extends string>(
             recall,
             f1
         });
+        console.log("result", testResults.at(-1));
     }
     console.log("results", testResults);
     const aggregated: Record<string, number> = testResults.reduce(

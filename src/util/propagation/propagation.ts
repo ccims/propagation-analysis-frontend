@@ -270,6 +270,7 @@ class IssuePropagator {
 
     private propagateIssueIntra(issue: PropagatedIssue, node: Component | Interface) {
         if (!issue.componentsAndInterfaces.includes(node.id)) {
+            issue.componentsAndInterfaces.push(node.id);
             this.addIssueToComponentOrInterface(issue, node.id);
             this.issuesToPropagate.push({ issue, nodeId: node.id });
         }
@@ -353,7 +354,7 @@ class IssuePropagator {
         ) {
             return [];
         }
-        return intraComponentDependencySpecification[isOutgoing ? "outgoing" : "incoming"]
+        return intraComponentDependencySpecification[isOutgoing ? "incoming" : "outgoing"]
             .map((id) => this.interfaceLookup.get(id)!)
             .filter((inter) =>
                 this.matchesMetaFilter(
