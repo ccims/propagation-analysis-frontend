@@ -720,6 +720,7 @@ function togglePropagationEdge(relation: string) {
 watchEffect(() => {
     {
         const graph = originalGraph.value;
+        return;
         if (graph == undefined) {
             return {
                 issues: [],
