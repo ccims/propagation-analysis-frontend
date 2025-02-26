@@ -7,18 +7,18 @@ export const eventRelationTemplate: string = "bd59d49a-daa5-43c5-b840-176617fe69
 export const microserviceTemplate: string = "d7e5dc94-686a-44a4-9c97-bcb0a1c38295";
 export const frontendTemplate: string = "f13a177d-a783-42c0-8810-0d20c613e41f";
 export const logicalComponentTemplate: string[] = [microserviceTemplate, frontendTemplate];
-export const libraryTemplate: string = "TODO";
-export const infrastructureTemplate: string = "TODO";
+export const libraryTemplate: string = "2f87d79d-aeab-4083-9fb0-327037e3d4d7";
+export const infrastructureTemplate: string = "0d3d7d08-6a8c-429b-b7b1-b165ebe776bd";
 
 export const issueTemplate: string = "1f1493e0-1557-4bee-8477-2c16c2bff8b4";
 
 // interface templates
-export const graphQLProvidedInterfaceTemplate: string = "TODO";
-export const graphQLRequiredInterfaceTemplate: string = "TODO";
-export const messagingPublishInterfaceTemplate: string = "TODO";
-export const messagingSubscribeInterfaceTemplate: string = "TODO";
-export const oauthProvidedInterfaceTemplate: string = "TODO";
-export const oauthRequiredInterfaceTemplate: string = "TODO";
+export const graphQLProvidedInterfaceTemplate: string = "a5247c11-470d-45f4-bd74-2516eae0d1cf";
+export const graphQLRequiredInterfaceTemplate: string = "90892863-895e-4099-abd1-553d7a03d9aa";
+export const messagingPublishInterfaceTemplate: string = "2dcc1e1b-3b1f-4c9a-8e12-432b15acf33d";
+export const messagingSubscribeInterfaceTemplate: string = "1494903a-273b-4b24-a0b1-e36e0cb43d6c";
+export const oauthProvidedInterfaceTemplate: string = "6c51aff7-e819-4ed6-a11c-33bf8873b5d3";
+export const oauthRequiredInterfaceTemplate: string = "61eb6a13-5d0d-44da-82fb-0c7e615ac947";
 
 // issue types
 export const BUG = "029c9ca1-8566-4138-bf78-44d958b16ad2";
@@ -31,10 +31,10 @@ export const OPEN = "5648e623-87b6-4479-af45-ad7e9df5ba1e";
 export const DEPENDS_ON = "54846b24-ee80-4c1a-abf8-062aa293a9be";
 
 // ICDS types
-export const ICDS_GG = "TODO";
-export const ICDS_EE = "TODO";
-export const ICDS_EG_SD = "TODO";
-export const ICDS_GE = "TODO";
+export const ICDS_GG = "05d82ca1-b76b-4a42-b53d-176b7563eb42";
+export const ICDS_EE = "0dab5dc8-af37-498a-afe1-532c3b266c77";
+export const ICDS_EG_SD = "569e6379-4c04-4dda-89e9-da0bfcdc8e87";
+export const ICDS_GE = "6519411a-11f8-4406-8134-78c4ba3c155d";
 
 export enum Characteristics {
     ApiBreakingBug = "API breaking bug",

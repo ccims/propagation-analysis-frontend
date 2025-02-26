@@ -30,8 +30,8 @@ export enum ComponentEnum {
 }
 
 enum InterfaceEnum {
-    Order_OrderOrderCreated = "TODO",
-    Discount_DiscountOrderValidationSucceeded = "TODO"
+    Order_OrderOrderCreated = "da29cfa1-8302-4354-a5b8-777e38cbe872",
+    Discount_DiscountOrderValidationSucceeded = "bda209d9-7cc1-4482-910e-6a1acbb49e3c"
 }
 
 export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum>[] = [

@@ -1,7 +1,5 @@
 import {
-    InterComponentPropagationRule,
     IntraComponentDependencySpecificationFilter,
-    IntraComponentPropagationRule,
     IssueFilter,
     IssuePropagationConfig,
     MetaFilter,
@@ -32,7 +30,7 @@ import {
     microserviceTemplate,
     oauthProvidedInterfaceTemplate,
     oauthRequiredInterfaceTemplate,
-    OPEN
+    OPEN,
 } from "./templates";
 
 const openBug = {
@@ -52,13 +50,6 @@ const openFeature = {
 const dependsOnRelation = {
     relationToSource: {
         type: DEPENDS_ON,
-        direction: "outgoing"
-    }
-} as const;
-
-const resultsInRelation = {
-    relationToSource: {
-        type: "results in",
         direction: "outgoing"
     }
 } as const;
