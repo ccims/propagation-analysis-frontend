@@ -187,14 +187,15 @@ export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum
             ComponentEnum.Payment
         ] // all after frontend may not be covered by rule. Update rule to both direction?
     },
-    // {
-    //     description: 'Notifications should be sent for Wishlist items that obtain a specific Discount in order to inform the user.',
-    //     type: 'Feature',
-    //     state: 'Open',
-    //     initialCharacteristics: ['Feature request - upstream to downstream'],
-    //     initialComponent: ComponentEnum.Wishlist,
-    //     propagation: [ComponentEnum.Discount]
-    // },
+    {
+        description:
+            "Notifications should be sent for Wishlist items that obtain a specific Discount in order to inform the user.",
+        type: "Feature",
+        state: "Open",
+        initialCharacteristics: [Characteristics.FeatureRequestUpToDown],
+        initialComponent: ComponentEnum.Wishlist,
+        propagation: [ComponentEnum.Discount]
+    },
     {
         description:
             "Product Variant Versions should get a popularity field, that describes a weighted sum of how much the Product Variant Version is sold recently.",
@@ -360,7 +361,7 @@ export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum
             ComponentEnum.Discount,
             ComponentEnum.Shipment,
             ComponentEnum.Order,
-            ComponentEnum.Inventory,
+            ComponentEnum.Inventory
         ]
     },
     {

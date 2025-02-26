@@ -241,10 +241,12 @@ import CreateInterfaceSpecificationDialog from "@/components/dialog/CreateInterf
 import CreateInterfaceSpecificationVersionDialog from "@/components/dialog/CreateInterfaceSpecificationVersionDialog.vue";
 import { Component, PropagatedIssue } from "@/util/propagation/issueModel";
 import { extractCharacteristics, propagateIssues } from "@/util/propagation/propagation";
-import { testPropagation } from "@/util/propagation/scoreCalculation";
+import { testPropagation, ValidationIssue } from "@/util/propagation/scoreCalculation";
 import { debugPropagationConfig } from "@/util/propagation/debugPropagationConfig";
 import { onlineBoutiqueRules } from "@/util/propagation/online-boutique/rules";
 import { onlineBoutiqueValidationSet } from "@/util/propagation/online-boutique/validationSet";
+import { misarchValidationSet } from "@/util/propagation/misarch/validationSet";
+import { misarchRules } from "@/util/propagation/misarch/rules";
 
 type ProjectGraph = NodeReturnType<"getProjectGraph", "Project">;
 type GraphLayoutSource = Pick<ProjectGraph, "relationLayouts" | "relationPartnerLayouts">;
@@ -425,8 +427,28 @@ const propagationMode = computed(() => {
 
 const nonPropagatingEdges = ref(new Set<string>());
 const createdPropagatingIssues = ref<PropagatedIssue[]>([]);
-const propagationConfig = ref(onlineBoutiqueRules);
-const validationSet = ref(onlineBoutiqueValidationSet);
+const propagationConfig = computed(() => {
+    if (trackableId.value == "54fb170c-63cf-49ec-bba0-87439d5ee954") {
+        return onlineBoutiqueRules;
+    } else if (trackableId.value == "049a6b7d-6729-4a1b-bd7a-20ae2e4144f1") {
+        return misarchRules
+    } else {
+        return {
+            schemas: {},
+            interComponentRules: [],
+            intraComponentRules: []
+        }
+    }
+});
+const validationSet = computed<ValidationIssue<string>[]>(() => {
+    if (trackableId.value == "54fb170c-63cf-49ec-bba0-87439d5ee954") {
+        return onlineBoutiqueValidationSet;
+    } else if (trackableId.value == "049a6b7d-6729-4a1b-bd7a-20ae2e4144f1") {
+        return misarchValidationSet
+    } else {
+        return [];
+    }
+});
 const selectedCharacteristics = ref<string[]>([]);
 const whatIfMode = ref(false);
 const whatIfTemplate = ref<string>();
@@ -498,7 +520,7 @@ const mappedComponents = computed(() => {
                                 (field) => [field.name, field.value]
                             )
                         ),
-                        component: component.component.id
+                        component: component.id
                     };
                 }),
             intraComponentDependencySpecifications: component.intraComponentDependencySpecifications.nodes.map(
@@ -720,7 +742,6 @@ function togglePropagationEdge(relation: string) {
 watchEffect(() => {
     {
         const graph = originalGraph.value;
-        return;
         if (graph == undefined) {
             return {
                 issues: [],

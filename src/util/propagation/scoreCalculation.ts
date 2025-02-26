@@ -27,14 +27,34 @@ export function testPropagation<T extends string>(
     context: Omit<PropagationContext, "issues">,
     validationSet: ValidationIssue<T>[]
 ): void {
-    console.log(JSON.stringify(context, null, 2));
+    //console.log(JSON.stringify(context, null, 2));
+    const allRelationPartners = new Map<string, { id: string; name: string }>(
+        context.components.flatMap((component) => {
+            const name = component.name;
+            return [
+                [
+                    component.id,
+                    {
+                        name,
+                        id: component.id
+                    }
+                ] as const,
+                ...component.interfaces.map(
+                    (inter) =>
+                        [
+                            inter.id,
+                            {
+                                name: `${name} - ${inter.name}`,
+                                id: component.id
+                            }
+                        ] as const
+                )
+            ];
+        })
+    );
     const testResults: TestResult[] = [];
-    let i = 0;
     for (const issue of validationSet) {
-        if (i++ != 7) {
-            //continue;
-        }
-        console.log(issue.description);
+        console.log(allRelationPartners.get(issue.initialComponent)!.name, issue.description);
         const propagationResult = propagateIssues(
             {
                 ...context,
@@ -55,18 +75,23 @@ export function testPropagation<T extends string>(
             },
             config
         );
-        const expectedComponents = issue.propagation.map((component) => component);
+        console.log("expected", issue.propagation.map((component) => allRelationPartners.get(component)!.name));
+        console.log("actual", propagationResult.issues.flatMap((issue) => issue.componentsAndInterfaces.map((id) => allRelationPartners.get(id)!.name)));
+        const expectedComponents = issue.propagation.map((component) => allRelationPartners.get(component)!.id);
         const expectedComponentsSet = new Set(expectedComponents);
-        const actualComponentsSet = new Set(propagationResult.issues.flatMap((issue) => issue.componentsAndInterfaces));
-        console.log(actualComponentsSet);
+        const actualComponentsSet = new Set(
+            propagationResult.issues.flatMap((issue) =>
+                issue.componentsAndInterfaces.map((id) => allRelationPartners.get(id)!.id)
+            )
+        );
         const allComponents = new Set(context.components.map((component) => component.id));
-        allComponents.delete(issue.initialComponent);
-        actualComponentsSet.delete(issue.initialComponent);
-        expectedComponentsSet.delete(issue.initialComponent);
+        const initialComponent = allRelationPartners.get(issue.initialComponent)!.id;
+        allComponents.delete(initialComponent);
+        actualComponentsSet.delete(initialComponent);
+        expectedComponentsSet.delete(initialComponent);
         const truePositive = new Set([...expectedComponentsSet].filter((x) => actualComponentsSet.has(x))).size;
         const falsePositive = new Set([...actualComponentsSet].filter((x) => !expectedComponentsSet.has(x as T))).size;
         const falseNegative = new Set([...expectedComponentsSet].filter((x) => !actualComponentsSet.has(x))).size;
-        console.log([...expectedComponentsSet].filter((x) => !actualComponentsSet.has(x)));
         const trueNegative = new Set(
             [...allComponents].filter((x) => !actualComponentsSet.has(x) && !expectedComponentsSet.has(x as T))
         ).size;
@@ -84,7 +109,7 @@ export function testPropagation<T extends string>(
             f1
         });
     }
-    console.log(testResults);
+    console.log("results", testResults);
     const aggregated: Record<string, number> = testResults.reduce(
         (acc, curr) => ({
             truePositive: acc.truePositive + curr.truePositive,
@@ -99,17 +124,14 @@ export function testPropagation<T extends string>(
     aggregated.f1 =
         (2 * aggregated.truePositive) /
         (2 * aggregated.truePositive + aggregated.falsePositive + aggregated.falseNegative);
-    // print averaged f1 score
     console.log(
         "avg f1",
         testResults.map((result) => result.f1).reduce((acc, curr) => acc + curr) / testResults.length
     );
-    // print averaged precision
     console.log(
         "avg precision",
         testResults.map((result) => result.precision).reduce((acc, curr) => acc + curr) / testResults.length
     );
-    // print averaged recall
     console.log(
         "avg recall",
         testResults.map((result) => result.recall).reduce((acc, curr) => acc + curr) / testResults.length

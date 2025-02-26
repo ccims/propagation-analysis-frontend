@@ -133,10 +133,16 @@ class IssuePropagator {
         while (this.issuesToPropagate.length > 0) {
             const { issue, nodeId } = this.issuesToPropagate.pop()!;
             const node = this.relationPartnerLookup.get(nodeId)!;
+            if (node == undefined) {
+                throw new Error(`failed to retrieve ${nodeId}`);
+            }
             const relations = this.relationPartnerRelationsLookup.get(nodeId);
             this.config.interComponentRules.forEach((rule) => {
                 for (const outgoingRelation of relations!.outgoing) {
                     const related = this.relationPartnerLookup.get(outgoingRelation.to);
+                    if (related == undefined) {
+                        throw new Error(`failed to retrieve ${outgoingRelation.to}`);
+                    }
                     if (this.doesIssuePropagateInter(issue, rule, node, related!, outgoingRelation, true)) {
                         propagatingRelations.add(outgoingRelation.id);
                         this.propagateIssueInter(issue, related!, rule);
@@ -144,6 +150,9 @@ class IssuePropagator {
                 }
                 for (const incomingRelation of relations!.incoming) {
                     const related = this.relationPartnerLookup.get(incomingRelation.from);
+                    if (related == undefined) {
+                        throw new Error(`failed to retrieve ${incomingRelation.from}`);
+                    }
                     if (this.doesIssuePropagateInter(issue, rule, related!, node, incomingRelation, false)) {
                         propagatingRelations.add(incomingRelation.id);
                         this.propagateIssueInter(issue, related!, rule);
@@ -426,8 +435,15 @@ class IssuePropagator {
             return false;
         }
         if (filter.type == "interface") {
+            if (!("component" in node)) {
+                return false;
+            }
             const inter = node as Interface;
             if (filter.component != undefined) {
+                const component = this.componentLookup.get(inter.component);
+                if (component == undefined) {
+                    throw new Error(`Could not find component with id ${inter.component}`);
+                }
                 if (
                     !this.matchesMetaFilter(
                         filter.component,
