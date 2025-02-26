@@ -31,7 +31,12 @@ export enum ComponentEnum {
 
 enum InterfaceEnum {
     Order_OrderOrderCreated = "da29cfa1-8302-4354-a5b8-777e38cbe872",
-    Discount_DiscountOrderValidationSucceeded = "bda209d9-7cc1-4482-910e-6a1acbb49e3c"
+    Discount_DiscountOrderValidationSucceeded = "bda209d9-7cc1-4482-910e-6a1acbb49e3c",
+    Inventory_OrderOrderCreated = "37ce2c5a-44d7-440a-8082-8a51b3ec5e33",
+    Inventory_PaymentPaymentPaymentFailed = "0196ae18-c1b8-4e90-b0c3-0e4c541971da",
+    Inventory_PaymentPaymentPaymentEnabled = "18eaf3f8-7471-4cd0-a42f-392561077228",
+    Inventory_DiscountOrderValidationFailed = "33e7ffb3-48e0-48a2-9869-c7ba46b5361c",
+    Catalog_GraphQLProvidedGateway = "68f21d89-d82d-4f74-aea7-0c61a7d3725d"
 }
 
 export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum>[] = [
@@ -76,7 +81,8 @@ export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum
             ComponentEnum.Shipment,
             ComponentEnum.Inventory,
             ComponentEnum.Payment,
-            ComponentEnum.Return
+            ComponentEnum.Return,
+            ComponentEnum.Catalog // invalid data from media service
         ]
     },
     {
@@ -126,7 +132,8 @@ export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum
             ComponentEnum.Payment,
             ComponentEnum.Invoice,
             ComponentEnum.Wishlist,
-            ComponentEnum.ShoppingCart
+            ComponentEnum.ShoppingCart,
+            ComponentEnum.Review
         ]
     },
     {
@@ -217,12 +224,13 @@ export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum
             ComponentEnum.Invoice,
             ComponentEnum.Payment,
             // transitive via saga
-            ComponentEnum.Shipment
+            ComponentEnum.Shipment,
+            ComponentEnum.Return // not informed that item was delivered
         ]
     },
     {
         description: "Domain model of bounded context Discount inaccurate, has to be modified",
-        type: BUG,
+        type: FEATURE, // TODO maybe change back
         state: OPEN,
         initialCharacteristics: [Characteristics.FeatureRequestUpToDown],
         initialComponent: ComponentEnum.Discount,
@@ -294,13 +302,19 @@ export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum
         type: BUG,
         state: OPEN,
         initialCharacteristics: [Characteristics.APIUsageBug],
-        initialComponent: ComponentEnum.Inventory,
+        initialComponent: [
+            InterfaceEnum.Inventory_DiscountOrderValidationFailed,
+            InterfaceEnum.Inventory_OrderOrderCreated,
+            InterfaceEnum.Inventory_PaymentPaymentPaymentEnabled,
+            InterfaceEnum.Inventory_PaymentPaymentPaymentFailed
+        ],
         propagation: [
             // via saga
             ComponentEnum.Discount,
             ComponentEnum.Shipment,
             ComponentEnum.Payment,
-            ComponentEnum.Invoice
+            ComponentEnum.Invoice,
+            ComponentEnum.Return
         ]
     },
     {
@@ -345,7 +359,8 @@ export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum
             // transitive via saga
             ComponentEnum.Invoice,
             ComponentEnum.Discount,
-            ComponentEnum.Shipment
+            ComponentEnum.Shipment,
+            ComponentEnum.Return
         ]
     },
     {
@@ -369,7 +384,7 @@ export const misarchValidationSet: ValidationIssue<ComponentEnum | InterfaceEnum
         type: FEATURE,
         state: OPEN,
         initialCharacteristics: [Characteristics.DtoFeature],
-        initialComponent: ComponentEnum.Catalog,
+        initialComponent: InterfaceEnum.Catalog_GraphQLProvidedGateway,
         propagation: [ComponentEnum.Frontend, ComponentEnum.Gateway]
     }
 ];

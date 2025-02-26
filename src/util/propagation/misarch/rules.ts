@@ -30,7 +30,7 @@ import {
     microserviceTemplate,
     oauthProvidedInterfaceTemplate,
     oauthRequiredInterfaceTemplate,
-    OPEN,
+    OPEN
 } from "./templates";
 
 const openBug = {
@@ -232,6 +232,18 @@ const frontendHostedOnInfrastructureFilter = {
     filterRelation: hostedOnFilter
 };
 
+const microserviceIncludesLibraryFilter = {
+    filterRelationStart: microserviceComponentFilter,
+    filterRelationEnd: libraryComponentFilter,
+    filterRelation: includesFilter
+};
+
+const frontendIncludesLibraryFilter = {
+    filterRelationStart: interfaceOnFrontendFilter,
+    filterRelationEnd: libraryComponentFilter,
+    filterRelation: includesFilter
+};
+
 // #endregion
 
 // #region partial intra component rules
@@ -278,13 +290,19 @@ const microserviceToProvidedSyncFilter = {
     filterInterface: syncProvidedFilter
 };
 
-const microserviceToRequiredFilter = {
-    propagationDirection: "interface-component" as const,
-    filterComponent: microserviceComponentFilter,
+const logicalComponentToRequiredFilter = {
+    propagationDirection: "component-interface" as const,
+    filterComponent: logicalComponentFilter,
     filterInterface: {
         or: [syncRequiredFilter, eventRequiredFilter]
     }
 };
+
+const microserviceToMessageSubscription = {
+    propagationDirection: "component-interface" as const,
+    filterComponent: microserviceComponentFilter,
+    filterInterface: eventRequiredFilter
+}
 
 // #endregion
 
@@ -494,6 +512,15 @@ export const misarchRules: IssuePropagationConfig = {
             propagationDirection: "backward",
             newIssueSchema: Schemas.callFailedDueToUnavailableService
         },
+        {
+            filterIssue: {
+                ...openBugFilter,
+                characteristics: [Characteristics.ServiceUnavailable]
+            },
+            ...messagingFilter,
+            propagationDirection: "backward",
+            newIssueSchema: Schemas.propagatedMissingEventCall
+        },
         // #endregion
         // #region failing service call
         {
@@ -535,7 +562,7 @@ export const misarchRules: IssuePropagationConfig = {
                 ...openBugFilter,
                 characteristics: [Characteristics.LibraryBreakingChange]
             },
-            ...microserviceHostedOnInfrastructureFilter,
+            ...microserviceIncludesLibraryFilter,
             propagationDirection: "backward",
             newIssueSchema: Schemas.serviceUnavailableDueToLibraryBreakingChange
         },
@@ -545,7 +572,7 @@ export const misarchRules: IssuePropagationConfig = {
                 ...openBugFilter,
                 characteristics: [Characteristics.LibraryBreakingChange]
             },
-            ...frontendHostedOnInfrastructureFilter,
+            ...frontendIncludesLibraryFilter,
             propagationDirection: "backward",
             newIssueSchema: Schemas.frontendUnvailableDueToLibraryBreakingChange
         },
@@ -590,7 +617,7 @@ export const misarchRules: IssuePropagationConfig = {
                 ...openFeatureFilter,
                 characteristics: [Characteristics.FeatureRequestUpToDown]
             },
-            ...microserviceSyncCallFilter,
+            ...messagingFilter,
             propagationDirection: "backward",
             newIssueSchema: Schemas.propagatedFeatureRequestUpToDown
         },
@@ -612,7 +639,7 @@ export const misarchRules: IssuePropagationConfig = {
                 ...openFeatureFilter,
                 characteristics: [Characteristics.FeatureRequestDownToUp]
             },
-            ...microserviceSyncCallFilter,
+            ...messagingFilter,
             propagationDirection: "forward",
             newIssueSchema: Schemas.propagatedFeatureRequestDownToUp
         },
@@ -634,12 +661,12 @@ export const misarchRules: IssuePropagationConfig = {
                 ...openFeatureFilter,
                 characteristics: [Characteristics.DtoFeature]
             },
-            ...microserviceSyncCallFilter,
+            ...messagingFilter,
             propagationDirection: "backward",
             newIssueSchema: Schemas.dtoFeature
         },
         // #endregion
-        // #region feature request - up to down
+        // #region dto bug
         {
             // sync call
             filterIssue: {
@@ -656,7 +683,7 @@ export const misarchRules: IssuePropagationConfig = {
                 ...openBugFilter,
                 characteristics: [Characteristics.DtoBug]
             },
-            ...microserviceSyncCallFilter,
+            ...messagingFilter,
             propagationDirection: "backward",
             newIssueSchema: Schemas.dtoBug
         },
@@ -769,6 +796,22 @@ export const misarchRules: IssuePropagationConfig = {
             },
             ...microserviceToProvidedSyncFilter
         },
+        {
+            // microservice to message subscriptions (cannot be handled anymore)
+            filterIssue: {
+                ...openBugFilter,
+                characteristics: [Characteristics.ServiceUnavailable]
+            },
+            ...microserviceToMessageSubscription
+        },
+        {
+            filterIssue: {
+                ...openBugFilter,
+                characteristics: [Characteristics.ServiceUnavailable]
+            },
+            propagationDirection: "forward",
+            ...microserviceEEFilter
+        },
         // #endregion
         // #region failing service call
         {
@@ -778,6 +821,14 @@ export const misarchRules: IssuePropagationConfig = {
                 characteristics: [Characteristics.FailingServiceCall]
             },
             ...microserviceToProvidedSyncFilter
+        },
+        {
+            filterIssue: {
+                ...openBugFilter,
+                characteristics: [Characteristics.FailingServiceCall]
+            },
+            propagationDirection: "backward",
+            ...microserviceGGFilter
         },
         // #endregion
         // #region missing event call
@@ -878,9 +929,9 @@ export const misarchRules: IssuePropagationConfig = {
             // microservice to "incoming" interfaces
             filterIssue: {
                 ...openFeatureFilter,
-                characteristics: [Characteristics.FeatureRequestUpToDown]
+                characteristics: [Characteristics.FeatureRequestDownToUp]
             },
-            ...microserviceToRequiredFilter
+            ...logicalComponentToRequiredFilter
         },
         // #endregion
         // #region dto feature

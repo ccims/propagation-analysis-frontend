@@ -7,7 +7,7 @@ export interface ValidationIssue<T> {
     type: string;
     state: string;
     initialCharacteristics: string[];
-    initialComponent: T;
+    initialComponent: T | T[];
     propagation: T[];
 }
 
@@ -53,7 +53,9 @@ export function testPropagation<T extends string>(
     );
     const testResults: TestResult[] = [];
     for (const issue of validationSet) {
-        console.log(allRelationPartners.get(issue.initialComponent)!.name, issue.description);
+        const firstInitialComponent = Array.isArray(issue.initialComponent) ? issue.initialComponent[0] : issue.initialComponent;
+        const initialComponents = Array.isArray(issue.initialComponent) ? issue.initialComponent : [issue.initialComponent];
+        console.log(allRelationPartners.get(firstInitialComponent)!.name, issue.description);
         const propagationResult = propagateIssues(
             {
                 ...context,
@@ -66,7 +68,7 @@ export function testPropagation<T extends string>(
                         type: issue.type,
                         template: "IssueTemplate",
                         title: issue.description,
-                        componentsAndInterfaces: [issue.initialComponent],
+                        componentsAndInterfaces: initialComponents,
                         characteristics: issue.initialCharacteristics,
                         templatedFields: {}
                     }
@@ -84,7 +86,11 @@ export function testPropagation<T extends string>(
             )
         );
         const allComponents = new Set(context.components.map((component) => component.id));
-        const initialComponent = allRelationPartners.get(issue.initialComponent)!.id;
+        const actualInitialComponents = new Set(initialComponents.map((component) => allRelationPartners.get(component)!.id));
+        if (actualInitialComponents.size > 1) {
+            throw new Error("only one initial component allowed (multiple interfaces of the same component are allowed)");
+        }
+        const initialComponent = allRelationPartners.get(initialComponents[0])!.id;
         allComponents.delete(initialComponent);
         actualComponentsSet.delete(initialComponent);
         expectedComponentsSet.delete(initialComponent);
@@ -107,6 +113,8 @@ export function testPropagation<T extends string>(
             recall,
             f1
         });
+        console.log("false positive", [...actualComponentsSet].filter((x) => !expectedComponentsSet.has(x as T)).map((x) => allRelationPartners.get(x)!.name));
+        console.log("false negative", [...expectedComponentsSet].filter((x) => !actualComponentsSet.has(x)).map((x) => allRelationPartners.get(x)!.name));
         console.log("result", testResults.at(-1));
     }
     console.log("results", testResults);
@@ -130,7 +138,7 @@ export function testPropagation<T extends string>(
     );
     console.log(
         "avg precision",
-        testResults.map((result) => result.precision).reduce((acc, curr) => acc + curr) / testResults.length
+        testResults.filter(result => !Number.isNaN(result.precision)).map((result) => result.precision).reduce((acc, curr) => acc + curr) / testResults.length
     );
     console.log(
         "avg recall",
