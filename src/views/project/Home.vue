@@ -186,6 +186,7 @@
         :initial-version="initialInterfaceSpecificationVersionVersion"
         @created-interface-specification-version="addInterfaceSpecificationVersion"
     />
+    <CreateIssueDialog :trackable="newPropagationIssueTrackableId" :initial-value="newPropagationIssueValue" @created-issue="createdPropagationIssue" />
 </template>
 <script lang="ts" setup>
 import { NodeReturnType, useClient } from "@/graphql/client";
@@ -247,6 +248,7 @@ import { onlineBoutiqueRules } from "@/util/propagation/online-boutique/rules";
 import { onlineBoutiqueValidationSet } from "@/util/propagation/online-boutique/validationSet";
 import { misarchValidationSet } from "@/util/propagation/misarch/validationSet";
 import { misarchRules } from "@/util/propagation/misarch/rules";
+import CreateIssueDialog from "@/components/dialog/CreateIssueDialog.vue";
 
 type ProjectGraph = NodeReturnType<"getProjectGraph", "Project">;
 type GraphLayoutSource = Pick<ProjectGraph, "relationLayouts" | "relationPartnerLayouts">;
