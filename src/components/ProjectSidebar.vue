@@ -132,6 +132,7 @@
                             :names="names"
                             :types="propagationData.types"
                             :states="propagationData.states"
+                            :what-if-mode="whatIfMode"
                             @create-issue="$emit('create-issue', $event)"
                         />
                     </v-window-item>

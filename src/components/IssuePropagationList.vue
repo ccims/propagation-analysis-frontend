@@ -24,7 +24,7 @@
                 {{ names.get(component) ?? "Error" }}
             </v-chip>
             <v-spacer />
-            <DefaultButton v-if="item.id == undefined" @click="$emit('create-issue', item)">
+            <DefaultButton v-if="item.id == undefined && !whatIfMode" @click="$emit('create-issue', item)">
                 Create issue
             </DefaultButton>
         </div>
@@ -50,6 +50,10 @@ const props = defineProps({
     },
     states: {
         type: Object as PropType<Map<string, { isOpen: boolean }>>,
+        required: true
+    },
+    whatIfMode: {
+        type: Boolean,
         required: true
     }
 });
